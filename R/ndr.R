@@ -8,14 +8,14 @@
 #              University of Pannonia, Hungary                                #
 #              kosztyan.zsolt@gtk.uni-pannon.hu                               #
 #                                                                             #
-# Last modified: February 2024                                                #
+# Last modified: November 2024                                                #
 #-----------------------------------------------------------------------------#
 #### GENERALIZED NETWORK-BASED DIMENSIONALITY REDUCTION AND ANALYSIS (GNDA) ###
 #' @export
 ndr<-function(r,covar=FALSE,cor_method=1,cor_type=1,min_R=0,min_comm=2,Gamma=1,
-              null_modell_type=4,mod_mode=6,min_evalue=0,
+              null_model_type=4,mod_mode=6,min_evalue=0,
               min_communality=0,com_communalities=0,use_rotation=FALSE,
-              rotation="oblimin"){
+              rotation="oblimin",weight=NULL){
 
   cl<-match.call()
   if (!requireNamespace("energy", quietly = TRUE)) {
@@ -54,6 +54,16 @@ ndr<-function(r,covar=FALSE,cor_method=1,cor_type=1,min_R=0,min_comm=2,Gamma=1,
       call. = FALSE
     )
   }
+  if (!is.numeric(as.matrix(r))) {
+    stop(
+      "The data should be numeric matrix or data.frame!",
+      call. = FALSE
+    )
+  }
+  if (is.null(weight)){
+    weight=rep(1,ncol(r))
+  }
+  r<-t(t(r)*weight)
   DATA<-r
   X<-r
 
@@ -422,7 +432,7 @@ ndr<-function(r,covar=FALSE,cor_method=1,cor_type=1,min_R=0,min_comm=2,Gamma=1,
   P$membership<-S
   P$fn<-"NDA"
   P$Call<-cl
-  class(P) <- "nda"
+  class(P) <- c("nda","list")
   return(P)
 }
 
