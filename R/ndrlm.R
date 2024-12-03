@@ -117,8 +117,8 @@ ndrlm<-function(Y,X,optimize=TRUE,cor_method=1,cor_type=1,min_comm=2,Gamma=1,
   P$fval<-cost(hyperparams)
   P$hyperparams<-hyperparams
   P$pareto<-pareto
-  P$X
-  P$Y
+  P$X<-X
+  P$Y<-Y
   P$NDA<-NDA
   P$fits<-fits
   P$NDA_weight<-weight
