@@ -32,6 +32,12 @@ plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
         call. = FALSE
       )
     }
+    if (!requireNamespace("lm.beta", quietly = TRUE)) {
+      stop(
+        "Package \"lm.beta\" must be installed to use this function.",
+        call. = FALSE
+      )
+    }
     nY<-ncol(x$Y)
     nS<-ncol(x$NDA$scores)
     nX<-ncol(x$X)
@@ -49,7 +55,7 @@ plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
     colnames(edges) <- c('from', 'to', 'weight')
     k<-1
     for (i in 1:nY){
-      coefs<-as.vector(x$fits[[i]]$coefficients[-1])
+      coefs<-as.vector(lm.beta::lm.beta(x$fits[[i]])$standardized.coefficients)[-1]
       pvalues<-summary(x$fits[[i]])$coefficients[-1,4]
       for (j in 1:length(coefs)){
         if (pvalues[j]<sig){
@@ -66,18 +72,19 @@ plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
         if (membership[i]==j){
           edges[k,"to"]<-nY+j
           edges[k,"from"]<-nY+nS+i
-          edges[k,"weight"]<-loadings[i,j]
+          edges[k,"weight"]<-loadings[colnames(x$X)[i],j]
           k<-k+1
         }
       }
     }
+    space=150
     cust_layout<-matrix(0,ncol=2,nrow=nY+nS+nX)
     cust_layout[1:nY,1]<-2
-    cust_layout[1:nY,2]<-(1:nY)-mean(1:nY)
+    cust_layout[1:nY,2]<-((1:nY)-mean(1:nY))*space
     cust_layout[(nY+1):(nY+nS),1]<-1
-    cust_layout[(nY+1):(nY+nS),2]<-(1:nS)-mean(1:nS)
+    cust_layout[(nY+1):(nY+nS),2]<-((1:nS)-mean(1:nS))*space
     cust_layout[(nY+nS+1):(nY+nS+nX),1]<-0
-    cust_layout[(nY+nS+1):(nY+nS+nX),2]<-(1:nX)-mean(1:nX)
+    cust_layout[(nY+nS+1):(nY+nS+nX),2]<-((1:nX)-mean(1:nX))*space
 
     G<-igraph::graph_from_data_frame(edges,
                              directed=TRUE,
@@ -87,7 +94,7 @@ plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
       nodes$color<-grDevices::hsv((c(rep(0,nY),1:nS,membership)+1)/
                                     max((c(rep(0,nY),1:nS,membership)+1)),
                                   alpha=0.4)
-      edges$arrows=ifelse(igraph::is.directed(G),c("middle"),"")
+      edges$arrows=ifelse(igraph::is.directed(G),c("to"),"")
       edges$width=(abs(igraph::E(G)$weight))
       nodes$shape<-gsub("rectangle","box",nodes$shape)
       nodes$shape<-gsub("circle","ellipse",nodes$shape)

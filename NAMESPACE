@@ -2,8 +2,11 @@
 
 S3method(biplot,nda)
 S3method(plot,nda)
+S3method(plot,ndrlm)
 S3method(print,nda)
+S3method(print,ndrlm)
 S3method(summary,nda)
+S3method(summary,ndrlm)
 export(dCor)
 export(dCov)
 export(data_gen)

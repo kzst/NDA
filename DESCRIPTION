@@ -27,6 +27,7 @@ Imports:
     MASS,
     mco,
     ppcor,
+    lm.beta,
     leidenAlg,
     visNetwork
 RoxygenNote: 7.2.3

@@ -79,17 +79,17 @@ e-mail*: kosztyan.zsolt@gtk.uni-pannon.hu
 
 \examples{
 
-# Using GNDA + LM with curve fitting
+# Using NDRLM with curve fitting optimization
 
 X<-freeny.x
 Y<-freeny.y
 NDRLM<-ndrlm(Y,X)
-summary(NDRLM$fits[[1]])
+summary(NDRLM)
 
-# Using GNDA + LM without curve fitting
+# Using NDRLM without fitting optimization
 
 NDRLM<-ndrlm(Y,X,optimize=FALSE)
-summary(NDRLM$fits[[1]])
+summary(NDRLM)
 
 }
 
