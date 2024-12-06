@@ -57,10 +57,11 @@ plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
     for (i in 1:nY){
       coefs<-as.vector(lm.beta::lm.beta(x$fits[[i]])$standardized.coefficients)[-1]
       pvalues<-summary(x$fits[[i]])$coefficients[-1,4]
+      indepvars<-colnames(x$fits[[i]]$model)[-1]
       for (j in 1:length(coefs)){
         if (pvalues[j]<sig){
           edges[k,"to"]<-i
-          edges[k,"from"]<-nY+j
+          edges[k,"from"]<-node_ID[node_label %in% indepvars[j]]
           edges[k,"weight"]<-coefs[j]
           k<-k+1
         }

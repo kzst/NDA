@@ -12,7 +12,7 @@
 #-----------------------------------------------------------------------------#
 ### GENERALIZED NETWORK-BASED DIMENSIONALITY REDUCTION AND REGRESSION (GNDR) ##
 #' @export
-ndrlm<-function(Y,X,optimize=TRUE,cor_method=1,cor_type=1,min_comm=2,Gamma=1,
+ndrlm<-function(Y,X,dircon=FALSE,optimize=TRUE,cor_method=1,cor_type=1,min_comm=2,Gamma=1,
               null_model_type=4,mod_mode=6,use_rotation=FALSE,
               rotation="oblimin",pareto=TRUE,out_weights=rep(1,ncol(Y)),
               lower.bounds = c(rep(-100,ncol(X)),0,0,0,0),
@@ -53,15 +53,29 @@ ndrlm<-function(Y,X,optimize=TRUE,cor_method=1,cor_type=1,min_comm=2,Gamma=1,
         return(0)
       }
     }else{
+      extra_vars<-FALSE
+      if ((dircon==TRUE)&&(sum(NDA$membership==0)>0)){
+        extra_vars<-TRUE
+        dropped_X<-X[,NDA$membership==0]
+      }
       for (i in 1:ncol(Y))
       {
-        data<-cbind(Y[,i],NDA$scores)
-        colnames(data)[1]<-colnames(Y)[i]
-        colnames(data)[-1]<-paste("NDA",1:NDA$factors,sep="")
+        if (extra_vars==TRUE){
+          data<-cbind(Y[,i],NDA$scores,dropped_X)
+          colnames(data)[1]<-colnames(Y)[i]
+          colnames(data)[-1]<-c(paste("NDA",1:NDA$factors,sep=""),
+                                colnames(dropped_X))
+        }else{
+          data<-cbind(Y[,i],NDA$scores)
+          colnames(data)[1]<-colnames(Y)[i]
+          colnames(data)[-1]<-paste("NDA",1:NDA$factors,sep="")
+
+        }
         data<-as.data.frame(data)
         fit<-stats::lm(str2lang(paste(colnames(data)[1],"~",
                                       gsub(", ","+",
                                            toString(colnames(data)[-1])))),data)
+
         res[i]<-stats::summary.lm(fit)$adj.r.squared
       }
       if (pareto==TRUE){
@@ -102,11 +116,24 @@ ndrlm<-function(Y,X,optimize=TRUE,cor_method=1,cor_type=1,min_comm=2,Gamma=1,
                mod_mode=mod_mode,use_rotation=use_rotation,
                rotation=rotation),silent=TRUE)
   fits<-list()
+  extra_vars<-FALSE
+  if ((dircon==TRUE)&&(sum(NDA$membership==0)>0)){
+    extra_vars<-TRUE
+    dropped_X<-X[,NDA$membership==0]
+  }
   for (i in 1:ncol(Y))
   {
-    data<-cbind(Y[,i],NDA$scores)
-    colnames(data)[1]<-colnames(Y)[i]
-    colnames(data)[-1]<-paste("NDA",1:NDA$factors,sep="")
+    if (extra_vars==TRUE){
+      data<-cbind(Y[,i],NDA$scores,dropped_X)
+      colnames(data)[1]<-colnames(Y)[i]
+      colnames(data)[-1]<-c(paste("NDA",1:NDA$factors,sep=""),
+                            colnames(dropped_X))
+    }else{
+      data<-cbind(Y[,i],NDA$scores)
+      colnames(data)[1]<-colnames(Y)[i]
+      colnames(data)[-1]<-paste("NDA",1:NDA$factors,sep="")
+
+    }
     data<-as.data.frame(data)
     fits[[i]]<-stats::lm(str2lang(paste(colnames(data)[1],"~",
                                   gsub(", ","+",
@@ -126,8 +153,13 @@ ndrlm<-function(Y,X,optimize=TRUE,cor_method=1,cor_type=1,min_comm=2,Gamma=1,
   P$NDA_min_communality<-params[2]
   P$NDA_com_communalities<-params[3]
   P$min_R <- params[4]
+  P$optimized<-optimize
   if (optimize==TRUE){
     P$NSGA<-NSGA
+  }
+  P$extra_vars<-extra_vars
+  if (extra_vars==TRUE){
+    P$dircon_X<-colnames(dropped_X)
   }
   P$fn<-"NDRLM"
   class(P)<-c("ndrlm","list")

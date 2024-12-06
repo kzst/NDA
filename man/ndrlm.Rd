@@ -6,16 +6,19 @@
 The main function of Generalized Network-based Dimensionality Reduction and Regression (GNDR) for supervised learning.
 }
 \usage{
-ndrlm(Y,X,optimize=TRUE,cor_method=1,cor_type=1,min_comm=2,Gamma=1,null_model_type=4,
-mod_mode=6,use_rotation=FALSE,rotation="oblimin",pareto=TRUE,out_weights=rep(1,ncol(Y)),
+ndrlm(Y,X,dircon=FALSE,optimize=TRUE,cor_method=1,cor_type=1,min_comm=2,Gamma=1,
+null_model_type=4,mod_mode=6,use_rotation=FALSE,rotation="oblimin",
+pareto=TRUE,out_weights=rep(1,ncol(Y)),
 lower.bounds = c(rep(-100,ncol(X)),0,0,0,0),
 upper.bounds = c(rep(100,ncol(X)),0.6,0.6,0.6,0.3),
-popsize = 20, generations = 30, cprob = 0.7, cdist = 5, mprob = 0.2, mdist=10, seed=NULL)
+popsize = 20, generations = 30, cprob = 0.7, cdist = 5,
+mprob = 0.2, mdist=10, seed=NULL)
 
 }
 \arguments{
   \item{Y}{A numeric data frame of output variables}
   \item{X}{A numeric data frame of input variables}
+  \item{dircon}{Wether enable or disable direct connection between input and output variables (default=FALSE)}
   \item{optimize}{Optimization of fittings (default=TRUE)}
   \item{cor_method}{Correlation method (optional).
 '1' Pearson's correlation (default),
@@ -61,7 +64,10 @@ popsize = 20, generations = 30, cprob = 0.7, cdist = 5, mprob = 0.2, mdist=10, s
 minimal common communalities (used in \code{\link{ndr}})}
 \item{NDA_min_R}{Optimized
 minimal square correlation between indicators (used in \code{\link{ndr}})}
+\item{otimized}{Wheter fittings are optimized or not}
 \item{NSGA}{Outpot structure of NSGA-II optimization (list), if the optimization value is true (see in \code{\link[mco:nsga2]{mco::nsga2}})}
+\item{extra_vars}{Logic variable. If direct connection (dircon=TRUE) is allowed not only the latent but the excluded input variables are analyized in the linear models as extra input variables.}
+\item{dircon_X}{The list of input variables which are directly connected to output variables.}
 \item{fn}{Function (regression) name: NDLM}
 }
 

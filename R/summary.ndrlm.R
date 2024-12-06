@@ -32,39 +32,36 @@ summary.ndrlm <- function(object,  digits =  getOption("digits"), ...) {
     NDA_min_communality<-object$NDA_min_communality
     NDA_com_communalities<-object$NDA_com_communalities
     min_R<-object$min_R
-    NSGA<-object$NSGA
-    fn<-object$fn
-    if (!is.null(object$NSGA)){
-      results<-list(Call=Call,
-                    fval=fval,
-                    pareto=pareto,
-                    X = X,
-                    Y = Y,
-                    NDA = NDA,
-                    fits = fits,
-                    NDA_weight<-NDA_weight,
-                    NDA_min_evalue<-NDA_min_evalue,
-                    NDA_min_communality<-NDA_min_communality,
-                    NDA_com_communalities<-NDA_com_communalities,
-                    min_R<-min_R,
-                    NSGA<-NSGA,
-                    fn<-fn)
-    }else{
-      results<-list(Call=Call,
-                    fval=fval,
-                    pareto=pareto,
-                    X = X,
-                    Y = Y,
-                    NDA = NDA,
-                    fits = fits,
-                    NDA_weight<-NDA_weight,
-                    NDA_min_evalue<-NDA_min_evalue,
-                    NDA_min_communality<-NDA_min_communality,
-                    NDA_com_communalities<-NDA_com_communalities,
-                    min_R<-min_R,
-                    fn<-fn)
+    optimized<-object$optimized
+    if (optimized==TRUE){
+      NSGA<-object$NSGA
     }
-    return(results)
+    extra_vars<-object$extra_vars
+    if (extra_vars==TRUE){
+      dircon_X<-object$dircon_X
+    }
+    fn<-object$fn
+    results<-list(Call=Call,
+                    fval=fval,
+                    pareto=pareto,
+                    X = X,
+                    Y = Y,
+                    NDA = NDA,
+                    fits = fits,
+                    NDA_weight=NDA_weight,
+                    NDA_min_evalue=NDA_min_evalue,
+                    NDA_min_communality=NDA_min_communality,
+                    NDA_com_communalities=NDA_com_communalities,
+                    min_R=min_R,
+                    optimized=optimized,
+                    NSGA=unlist(ifelse(optimized==TRUE,
+                                       list(NSGA),
+                                       list(NULL))),
+                    extra_vars=extra_vars,
+                    dircon_X=unlist(ifelse(extra_vars==TRUE,
+                                     list(dircon_X),
+                                     list(NULL))),
+                    fn=fn)
     print.ndrlm(object)
   }else{
     summary(object,...)
