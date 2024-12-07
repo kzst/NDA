@@ -10,7 +10,7 @@
 #                                                                             #
 # Last modified: February 2024                                                #
 #-----------------------------------------------------------------------------#
-###### PLOT FOR NETWORK-BASED DIMENSIONALITY REDUCTION AND ANALYSIS (NDA) #####
+### PLOT FOR NETWORK-BASED DIMENSIONALITY REDUCTION AND REGRESSION (NDRLM) ####
 #' @export
 plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
   if (methods::is(x,"ndrlm")){

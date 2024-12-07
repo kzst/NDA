@@ -44,7 +44,7 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
   if (("in" %in% latents)==FALSE){ # Pareto-optimiality can be found,
     pareto=FALSE         #  if there are only latent-independent variables
   }
-  if (("none" %in% latents)==FALSE){ # If there are no latent variables,
+  if (("none" %in% latents)==TRUE){ # If there are no latent variables,
     optimize=FALSE # there is no way to optimize fittings.
   }
 
@@ -267,8 +267,6 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
                      rotation=rotation),silent=TRUE)
   }
   fits<-list()
-  extra_vars<-FALSE
-
   extra_vars<-FALSE
   if (latents %in% c("in","both")){
     if ((dircon==TRUE)&&(sum(NDA_in$membership==0)>0)){
