@@ -25,20 +25,38 @@ print.ndrlm <- function(x, digits = getOption("digits"), ...) {
     pareto<-x$pareto
     X<-x$X
     Y<-x$Y
-    NDA<-x$NDA
+    latents<-x$latents
+    if (latents %in% c("in","both")){
+      NDAin<-x$NDAin
+      NDAin_weight<-x$NDAin_weight
+      NDAin_min_evalue<-x$NDAin_min_evalue
+      NDAin_min_communality<-x$NDAin_min_communality
+      NDAin_com_communalities<-x$NDAin_com_communalities
+      NDAin_min_R<-x$NDAin_min_R
+    }
+    if (latents %in% c("out","both")){
+      NDAout<-x$NDAout
+      NDAout_weight<-x$NDAout_weight
+      NDAout_min_evalue<-x$NDAout_min_evalue
+      NDAout_min_communality<-x$NDAout_min_communality
+      NDAout_com_communalities<-x$NDAout_com_communalities
+      NDAout_min_R<-x$NDAout_min_R
+    }
     fits<-x$fits
-    NDA_weight<-x$NDA_weight
-    NDA_min_evalue<-x$NDA_min_evalue
-    NDA_min_communality<-x$NDA_min_communality
-    NDA_com_communalities<-x$NDA_com_communalities
-    min_R<-x$min_R
     optimized<-x$optimized
     if (optimized==TRUE){
       NSGA<-x$NSGA
     }
     extra_vars<-x$extra_vars
-    if (extra_vars==TRUE){
-      dircon_X<-x$dircon_X
+    if (latents %in% c("in","both")){
+      if (extra_vars==TRUE){
+        dircon_X<-x$dircon_X
+      }
+    }
+    if (latents %in% c("out","both")){
+      if (extra_vars==TRUE){
+        dircon_Y<-x$dircon_Y
+      }
     }
     fn<-x$fn
     cat("\nBrief summary of NDRLM:\n")
@@ -46,22 +64,75 @@ print.ndrlm <- function(x, digits = getOption("digits"), ...) {
     print(Call)
     cat("\nNumber of independent variables: ",ncol(X))
     cat("\nNumber of dependent variables: ",ncol(Y))
-    cat("\nNumber of latent-independent variables: ",ncol(NDA$factors))
-    cat("\nNumber of dropped independent variables: ",sum((NDA$membership==0)))
-    cat("\n\nSummary of dimensionality reduction\n")
-    print.nda(NDA,digits = digits)
-
+    if (latents %in% c("in","both")){
+      cat("\nNumber of latent-independent variables: ",ncol(NDAin$factors))
+    }
+    if (latents %in% c("out","both")){
+      cat("\nNumber of latent-dependent variables: ",ncol(NDAout$factors))
+    }
+    if (latents %in% c("in","both")){
+      if (extra_vars==TRUE){
+        cat("\nNumber of dropped independent variables: ",sum((NDAin$membership==0)))
+      }
+    }
+    if (latents %in% c("out","both")){
+      if (extra_vars==TRUE){
+        cat("\nNumber of dropped dependent variables: ",sum((NDAout$membership==0)))
+      }
+    }
+    if (latents %in% c("in","both")){
+      cat("\n\nSummary of dimensionality reduction for independent variables\n")
+      print.nda(NDAin,digits = digits)
+    }
+    if (latents %in% c("out","both")){
+      cat("\n\nSummary of dimensionality reduction for dependent variables\n")
+      print.nda(NDAout,digits = digits)
+    }
     cat("\n\nSummary of fitting\n")
     if (optimized==TRUE){
       cat("\nOptimized fittings\n")
     }else{
       cat("\nNon-optimized fittings\n")
     }
-    cat("\nList of dependent variables: ",toString(colnames(Y)))
-    cat("\nList of independent variables: ",toString(colnames(X)))
-    cat("\nList of latent-independent variables: ",toString(colnames(NDA$scores)))
-    if (extra_vars==TRUE){
-      cat("\nList of non-groupped independent variables: ",toString(dircon_X))
+
+    dep<-Y
+    if (latents %in% c("out","both")){
+      if (extra_vars==TRUE){
+        dep<-cbind(NDAout$scores,Y[,NDAout$membership==0])
+        dep<-as.data.frame(dep)
+        colnames(dep)<-c(paste("NDAout",1:NDAout$factors,sep=""),
+                         colnames(Y)[NDAout$membership==0])
+      }else{
+        dep<-NDAout$scores
+        colnames(dep)<-paste("NDAout",1:NDAout$factors,sep="")
+      }
+    }
+    indep<-X
+    if (latents %in% c("in","both")){
+      if (extra_vars==TRUE){
+        indep<-cbind(NDAin$scores,X[,NDAin$membership==0])
+        indep<-as.data.frame(indep)
+        colnames(indep)<-c(paste("NDAin",1:NDAin$factors,sep=""),
+                           colnames(X)[NDAin$membership==0])
+      }else{
+        indep<-NDAin$scores
+        colnames(indep)<-paste("NDAin",1:NDAin$factors,sep="")
+      }
+    }
+
+    cat("\nList of dependent variables: ",toString(colnames(dep)))
+    cat("\nList of independent variables: ",toString(colnames(indep)))
+    if (latents %in% c("in","both")){
+      cat("\nList of latent-independent variables: ",toString(colnames(NDAin$scores)))
+      if (extra_vars==TRUE){
+        cat("\nList of non-groupped independent variables: ",toString(dircon_X))
+      }
+    }
+    if (latents %in% c("out","both")){
+      cat("\nList of latent-dependent variables: ",toString(colnames(NDAout$scores)))
+      if (extra_vars==TRUE){
+        cat("\nList of non-groupped independent variables: ",toString(dircon_Y))
+      }
     }
 
     for (i in 1:length(fits)){

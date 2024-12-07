@@ -25,20 +25,38 @@ summary.ndrlm <- function(object,  digits =  getOption("digits"), ...) {
     pareto<-object$pareto
     X<-object$X
     Y<-object$Y
-    NDA<-object$NDA
+    latents<-object$latents
+    if (latents %in% c("in","both")){
+      NDAin<-object$NDAin
+      NDAin_weight<-object$NDAin_weight
+      NDAin_min_evalue<-object$NDAin_min_evalue
+      NDAin_min_communality<-object$NDAin_min_communality
+      NDAin_com_communalities<-object$NDAin_com_communalities
+      NDAin_min_R<-object$NDAin_com_communalities
+    }
+    if (latents %in% c("out","both")){
+      NDAout<-object$NDAout
+      NDAout_weight<-object$NDAout_weight
+      NDAout_min_evalue<-object$NDAout_min_evalue
+      NDAout_min_communality<-object$NDAout_min_communality
+      NDAout_com_communalities<-object$NDAout_com_communalities
+      NDAout_min_R<-object$NDAout_com_communalities
+    }
     fits<-object$fits
-    NDA_weight<-object$NDA_weight
-    NDA_min_evalue<-object$NDA_min_evalue
-    NDA_min_communality<-object$NDA_min_communality
-    NDA_com_communalities<-object$NDA_com_communalities
-    min_R<-object$min_R
     optimized<-object$optimized
     if (optimized==TRUE){
       NSGA<-object$NSGA
     }
     extra_vars<-object$extra_vars
-    if (extra_vars==TRUE){
-      dircon_X<-object$dircon_X
+    if (latents %in% c("in","both")){
+      if (extra_vars==TRUE){
+        dircon_X<-object$dircon_X
+      }
+    }
+    if (latents %in% c("out","both")){
+      if (extra_vars==TRUE){
+        dircon_Y<-object$dircon_Y
+      }
     }
     fn<-object$fn
     results<-list(Call=Call,
@@ -46,21 +64,55 @@ summary.ndrlm <- function(object,  digits =  getOption("digits"), ...) {
                     pareto=pareto,
                     X = X,
                     Y = Y,
-                    NDA = NDA,
+                    latents = latents,
+                    NDAin=unlist(ifelse(latents %in% c("in","both"),
+                                     list(NDAin),
+                                     list(NULL))),
+                    NDAin_weight=unlist(ifelse(latents %in% c("in","both"),
+                                      list(NDAin_weight),
+                                      list(NULL))),
+                    NDAin_min_evalue=unlist(ifelse(latents %in% c("in","both"),
+                                             list(NDAin_min_evalue),
+                                             list(NULL))),
+                    NDAin_min_communality=unlist(ifelse(latents %in% c("in","both"),
+                                                 list(NDAin_min_communality),
+                                                 list(NULL))),
+                    NDAin_com_communalities=unlist(ifelse(latents %in% c("in","both"),
+                                                      list(NDAin_com_communalities),
+                                                      list(NULL))),
+                    NDAin_min_R=unlist(ifelse(latents %in% c("in","both"),
+                                                      list(NDAin_min_R),
+                                                      list(NULL))),
+                    NDAout=unlist(ifelse(latents %in% c("out","both"),
+                                     list(NDAout),
+                                     list(NULL))),
+                    NDAout_weight=unlist(ifelse(latents %in% c("out","both"),
+                                      list(NDAout_weight),
+                                      list(NULL))),
+                    NDAout_min_evalue=unlist(ifelse(latents %in% c("out","both"),
+                                             list(NDAout_min_evalue),
+                                             list(NULL))),
+                    NDAout_min_communality=unlist(ifelse(latents %in% c("out","both"),
+                                                 list(NDAout_min_communality),
+                                                 list(NULL))),
+                    NDAout_com_communalities=unlist(ifelse(latents %in% c("out","both"),
+                                                      list(NDAout_com_communalities),
+                                                      list(NULL))),
+                    NDAout_min_R=unlist(ifelse(latents %in% c("out","both"),
+                                                      list(NDAout_min_R),
+                                                      list(NULL))),
                     fits = fits,
-                    NDA_weight=NDA_weight,
-                    NDA_min_evalue=NDA_min_evalue,
-                    NDA_min_communality=NDA_min_communality,
-                    NDA_com_communalities=NDA_com_communalities,
-                    min_R=min_R,
                     optimized=optimized,
                     NSGA=unlist(ifelse(optimized==TRUE,
                                        list(NSGA),
                                        list(NULL))),
                     extra_vars=extra_vars,
-                    dircon_X=unlist(ifelse(extra_vars==TRUE,
+                    dircon_X=unlist(ifelse((extra_vars==TRUE)&&latents %in% c("in","both"),
                                      list(dircon_X),
                                      list(NULL))),
+                    dircon_Y=unlist(ifelse((extra_vars==TRUE)&&latents %in% c("out","both"),
+                                         list(dircon_Y),
+                                         list(NULL))),
                     fn=fn)
     print.ndrlm(object)
   }else{

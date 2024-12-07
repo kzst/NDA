@@ -1162,3 +1162,830 @@ ndrlm<-function(Y,X,optimize=TRUE,cor_method=1,cor_type=1,min_comm=2,Gamma=1,
   class(P)<-c("ndrlm","list")
   return(P)
 }
+
+### GENERALIZED NETWORK-BASED DIMENSIONALITY REDUCTION AND REGRESSION (GNDR) ##
+ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
+                cor_type=1,min_comm=2,Gamma=1,
+                null_model_type=4,mod_mode=1,use_rotation=FALSE,
+                rotation="oblimin",pareto=FALSE,fit_weights=NULL,
+                lower.bounds.x = c(rep(-100,ncol(X))),
+                upper.bounds.x = c(rep(100,ncol(X))),
+                lower.bounds.latentx = c(0,0,0,0),
+                upper.bounds.latentx = c(0.6,0.6,0.6,0.3),
+                lower.bounds.y = c(rep(-100,ncol(Y))),
+                upper.bounds.y = c(rep(100,ncol(Y))),
+                lower.bounds.latenty = c(0,0,0,0),
+                upper.bounds.latenty = c(0.6,0.6,0.6,0.3),
+                popsize = 20, generations = 30, cprob = 0.7, cdist = 5,
+                mprob = 0.2, mdist=10, seed=NULL){
+  cl<-match.call()
+  if (!requireNamespace("mco", quietly = TRUE)) {
+    stop(
+      "Package \"mco\" must be installed to use this function.",
+      call. = FALSE
+    )
+  }
+  Y<-as.data.frame(Y)
+  X<-as.data.frame(X)
+
+  weight.X<-rep(1,ncol(X))
+  weight.Y<-rep(1,ncol(Y))
+  latent.X<-c(0,0,0,0)
+  latent.Y<-c(0,0,0,0)
+
+  if (("in" %in% latents)==FALSE){ # Pareto-optimiality can be found,
+    pareto=FALSE         #  if there are only latent-independent variables
+  }
+  if (("none" %in% latents)==FALSE){ # If there are no latent variables,
+    optimize=FALSE # there is no way to optimize fittings.
+  }
+
+  hyperparams=switch(
+    latents,
+    "in"=c(weight.X,latent.X),
+    "out"=c(weight.Y,latent.Y),
+    "both"=c(weight.X,latent.X,weight.Y,latent.Y),
+    "none"=NULL
+  )
+  lower.bounds=switch(
+    latents,
+    "in"=c(lower.bounds.x,lower.bounds.latentx),
+    "out"=c(lower.bounds.y,lower.bounds.latenty),
+    "both"=c(lower.bounds.x,lower.bounds.latentx,
+             lower.bounds.y,lower.bounds.latenty),
+    "none"=NULL
+  )
+  upper.bounds=switch(
+    latents,
+    "in"=c(upper.bounds.x,lower.bounds.latentx),
+    "out"=c(upper.bounds.y,lower.bounds.latenty),
+    "both"=c(upper.bounds.x,upper.bounds.latentx,
+             upper.bounds.y,upper.bounds.latenty),
+    "none"=NULL
+  )
+  cost<-function(hyperparams){
+    if ("in" %in% latents){
+      weight.X<-hyperparams[1:ncol(X)]
+      params.X<-hyperparams[-c(1:ncol(X))]
+    }else{
+      if ("out" %in% latents){
+        weight.Y<-hyperparams[1:ncol(Y)]
+        params.Y<-hyperparams[-c(1:ncol(Y))]
+      }else{
+        if ("both" %in% latents){
+          weight.X<-hyperparams[1:ncol(X)]
+          params.X<-hyperparams[(ncol(X)+1):(ncol(X)+4)]
+          weight.Y<-hyperparams[(ncol(X)+5):(ncol(X)+4+ncol(Y))]
+          params.Y<-hyperparams[(ncol(X)+5+ncol(Y)):(ncol(X)+4+ncol(Y)+4)]
+        }
+      }
+    }
+    if (latents %in% c("in","both")){ # For latent-independent variables
+      NDA_in<-try(ndr(X,min_evalue = params.X[1],
+                      min_communality=params.X[2],
+                      com_communalities = params.X[3],
+                      min_R = params.X[4],weight=weight.X,covar=FALSE,
+                      cor_method=cor_method,
+                      cor_type=cor_type,
+                      min_comm=min_comm,
+                      Gamma=Gamma,
+                      null_model_type=null_model_type,
+                      mod_mode=mod_mode,
+                      use_rotation=use_rotation,
+                      rotation=rotation),silent=TRUE)
+    }
+
+    if (latents %in% c("out","both")){ # For latent-dependent variables
+      NDA_out<-try(ndr(Y,min_evalue = params.Y[1],
+                       min_communality=params.Y[2],
+                       com_communalities = params.Y[3],
+                       min_R = params.Y[4],weight=weight.Y,covar=FALSE,
+                       cor_method=cor_method,
+                       cor_type=cor_type,
+                       min_comm=min_comm,
+                       Gamma=Gamma,
+                       null_model_type=null_model_type,
+                       mod_mode=mod_mode,
+                       use_rotation=use_rotation,
+                       rotation=rotation),silent=TRUE)
+    }
+    if (pareto==FALSE){
+      res=0
+    }else{
+      res<-c(rep(0,ncol(Y)))
+    }
+    error<-FALSE
+    if (latents %in% c("in","both")){
+      if (inherits(NDA_in,"try-error")){
+        error<-TRUE
+        return(res)
+      }
+    }else{
+      if (latents %in% c("out","both")){
+        if (inherits(NDA_out,"try-error")){
+          error<-TRUE
+          return(res)
+        }
+      }
+    }
+
+    if (error==FALSE){
+      extra_vars<-FALSE
+      if (latents %in% c("in","both")){
+        if ((dircon==TRUE)&&(sum(NDA_in$membership==0)>0)){
+          extra_vars<-TRUE
+          dropped_X<-X[,NDA_in$membership==0]
+        }
+      }else{
+        if (latents %in% c("out","both")){
+          if ((dircon==TRUE)&&(sum(NDA_out$membership==0)>0)){
+            extra_vars<-TRUE
+            dropped_Y<-Y[,NDA_out$membership==0]
+          }
+        }
+      }
+      dep<-Y
+      if (latents %in% c("out","both")){
+        if (extra_vars==TRUE){
+          dep<-cbind(NDA_out$scores,dropped_Y)
+          dep<-as.data.frame(dep)
+          colnames(dep)<-c(paste("NDAout",1:NDA_out$factors,sep=""),
+                           colnames(dropped_Y))
+        }else{
+          dep<-NDA_out$scores
+          colnames(dep)<-paste("NDAout",1:NDA_out$factors,sep="")
+        }
+      }
+      indep<-X
+      if (latents %in% c("in","both")){
+        if (extra_vars==TRUE){
+          indep<-cbind(NDA_in$scores,dropped_X)
+          indep<-as.data.frame(indep)
+          colnames(indep)<-c(paste("NDAin",1:NDA_in$factors,sep=""),
+                             colnames(dropped_X))
+        }else{
+          indep<-NDA_in$scores
+          colnames(indep)<-paste("NDAin",1:NDA_in$factors,sep="")
+        }
+      }
+
+      for (i in 1:ncol(dep))
+      {
+        data<-cbind(dep[,i],indep)
+        colnames(data)[1]<-colnames(dep)[i]
+        colnames(data)[-1]<-colnames(indep)
+        data<-as.data.frame(data)
+        fit<-stats::lm(str2lang(paste(colnames(data)[1],"~",
+                                      gsub(", ","+",
+                                           toString(colnames(data)[-1])))),data)
+
+        res[i]<-stats::summary.lm(fit)$adj.r.squared
+      }
+      if (pareto==TRUE){
+        return(res)
+      }else{
+        if (is.null(fit_weights)){
+          return(mean(res))
+        }else{
+          return(stats::weighted.mean(res,fit_weights))
+        }
+      }
+    }
+  }
+  if (!is.null(seed))
+  {
+    set.seed(seed)
+  }
+
+  costmin <- function(hyperparams) -cost(hyperparams)
+  if (pareto==TRUE){
+    ODIM<-ncol(Y)
+  }else{
+    ODIM<-1
+  }
+  if ((optimize==TRUE)&&(latents %in% c("in","out","both"))){
+    NSGA <- mco::nsga2(fn=costmin,idim=length(hyperparams),odim=ODIM,
+                       lower.bounds = lower.bounds,
+                       upper.bounds = upper.bounds,
+                       popsize = popsize,
+                       generations = generations, cprob = cprob, cdist = cdist,
+                       mprob = mprob, mdist=mdist,vectorized = FALSE)
+    hyperparams<-NSGA$par[1,]
+  }
+
+  if ("in" %in% latents){
+    weight.X<-hyperparams[1:ncol(X)]
+    params.X<-hyperparams[-c(1:ncol(X))]
+  }else{
+    if ("out" %in% latents){
+      weight.Y<-hyperparams[1:ncol(Y)]
+      params.Y<-hyperparams[-c(1:ncol(Y))]
+    }else{
+      if ("both" %in% latents){
+        weight.X<-hyperparams[1:ncol(X)]
+        params.X<-hyperparams[(ncol(X)+1):(ncol(X)+4)]
+        weight.Y<-hyperparams[(ncol(X)+5):(ncol(X)+4+ncol(Y))]
+        params.Y<-hyperparams[(ncol(X)+5+ncol(Y)):(ncol(X)+4+ncol(Y)+4)]
+      }
+    }
+  }
+  if (latents %in% c("in","both")){ # For latent-independent variables
+    NDA_in<-try(ndr(X,min_evalue = params.X[1],
+                    min_communality=params.X[2],
+                    com_communalities = params.X[3],
+                    min_R = params.X[4],weight=weight.X,covar=FALSE,
+                    cor_method=cor_method,
+                    cor_type=cor_type,
+                    min_comm=min_comm,
+                    Gamma=Gamma,
+                    null_model_type=null_model_type,
+                    mod_mode=mod_mode,
+                    use_rotation=use_rotation,
+                    rotation=rotation),silent=TRUE)
+  }
+
+  if (latents %in% c("out","both")){ # For latent-dependent variables
+    NDA_out<-try(ndr(Y,min_evalue = params.Y[1],
+                     min_communality=params.Y[2],
+                     com_communalities = params.Y[3],
+                     min_R = params.Y[4],weight=weight.Y,covar=FALSE,
+                     cor_method=cor_method,
+                     cor_type=cor_type,
+                     min_comm=min_comm,
+                     Gamma=Gamma,
+                     null_model_type=null_model_type,
+                     mod_mode=mod_mode,
+                     use_rotation=use_rotation,
+                     rotation=rotation),silent=TRUE)
+  }
+  fits<-list()
+  extra_vars<-FALSE
+
+  extra_vars<-FALSE
+  if (latents %in% c("in","both")){
+    if ((dircon==TRUE)&&(sum(NDA_in$membership==0)>0)){
+      extra_vars<-TRUE
+      dropped_X<-X[,NDA_in$membership==0]
+    }
+  }else{
+    if (latents %in% c("out","both")){
+      if ((dircon==TRUE)&&(sum(NDA_out$membership==0)>0)){
+        extra_vars<-TRUE
+        dropped_Y<-Y[,NDA_out$membership==0]
+      }
+    }
+  }
+  dep<-Y
+  if (latents %in% c("out","both")){
+    if (extra_vars==TRUE){
+      dep<-cbind(NDA_out$scores,dropped_Y)
+      dep<-as.data.frame(dep)
+      colnames(dep)<-c(paste("NDAout",1:NDA_out$factors,sep=""),
+                       colnames(dropped_Y))
+    }else{
+      dep<-NDA_out$scores
+      colnames(dep)<-paste("NDAout",1:NDA_out$factors,sep="")
+    }
+  }
+  indep<-X
+  if (latents %in% c("in","both")){
+    if (extra_vars==TRUE){
+      indep<-cbind(NDA_in$scores,dropped_X)
+      indep<-as.data.frame(indep)
+      colnames(indep)<-c(paste("NDAin",1:NDA_in$factors,sep=""),
+                         colnames(dropped_X))
+    }else{
+      indep<-NDA_in$scores
+      colnames(indep)<-paste("NDAin",1:NDA_in$factors,sep="")
+    }
+  }
+
+  for (i in 1:ncol(dep))
+  {
+    data<-cbind(dep[,i],indep)
+    colnames(data)[1]<-colnames(dep)[i]
+    colnames(data)[-1]<-colnames(indep)
+    data<-as.data.frame(data)
+    fit<-stats::lm(str2lang(paste(colnames(data)[1],"~",
+                                  gsub(", ","+",
+                                       toString(colnames(data)[-1])))),data)
+
+    fits[[i]]<-fit
+  }
+
+
+
+  P<-list()
+  P$Call<-cl
+  P$fval<-cost(hyperparams)
+  P$hyperparams<-hyperparams
+  P$pareto<-pareto
+  P$X<-X
+  P$Y<-Y
+  P$latents<-latents
+  if (latents %in% c("in","both")){
+    P$NDAin<-NDA_in
+    P$NDAin_weight<-weight.X
+    P$NDAin_min_evalue<-params.X[1]
+    P$NDAin_min_communality<-params.X[2]
+    P$NDAin_com_communalities<-params.X[3]
+    P$NDAin_min_R <- params.X[4]
+  }
+  if (latents %in% c("out","both")){
+    P$NDAout<-NDA_out
+    P$NDAout_weight<-weight.Y
+    P$NDAout_min_evalue<-params.Y[1]
+    P$NDAout_min_communality<-params.Y[2]
+    P$NDAout_com_communalities<-params.Y[3]
+    P$NDAout_min_R <- params.Y[4]
+  }
+  P$fits<-fits
+  P$optimized<-optimize
+  if (optimize==TRUE){
+    P$NSGA<-NSGA
+  }
+  P$extra_vars<-extra_vars
+  if (latents %in% c("in","both")){
+    if (extra_vars==TRUE){
+      P$dircon_X<-colnames(dropped_X)
+    }
+  }
+  if (latents %in% c("out","both")){
+    if (extra_vars==TRUE){
+      P$dircon_Y<-colnames(dropped_Y)
+    }
+  }
+  P$fn<-"NDRLM"
+  class(P)<-c("ndrlm","list")
+  return(P)
+}
+
+## PRINT FOR NETWORK-BASED DIMENSIONALITY REDUCTION AND REGRESSION (NDRLM) ##
+print.ndrlm <- function(x, digits = getOption("digits"), ...) {
+  if (!requireNamespace("stats", quietly = TRUE)) {
+    stop(
+      "Package \"stats\" must be installed to use this function.",
+      call. = FALSE
+    )
+  }
+  if (methods::is(x,"ndrlm")){
+    Call<-x$Call
+    fval<-x$fval
+    pareto<-x$pareto
+    X<-x$X
+    Y<-x$Y
+    latents<-x$latents
+    if (latents %in% c("in","both")){
+      NDAin<-x$NDAin
+      NDAin_weight<-x$NDAin_weight
+      NDAin_min_evalue<-x$NDAin_min_evalue
+      NDAin_min_communality<-x$NDAin_min_communality
+      NDAin_com_communalities<-x$NDAin_com_communalities
+      NDAin_min_R<-x$NDAin_min_R
+    }
+    if (latents %in% c("out","both")){
+      NDAout<-x$NDAout
+      NDAout_weight<-x$NDAout_weight
+      NDAout_min_evalue<-x$NDAout_min_evalue
+      NDAout_min_communality<-x$NDAout_min_communality
+      NDAout_com_communalities<-x$NDAout_com_communalities
+      NDAout_min_R<-x$NDAout_min_R
+    }
+    fits<-x$fits
+    optimized<-x$optimized
+    if (optimized==TRUE){
+      NSGA<-x$NSGA
+    }
+    extra_vars<-x$extra_vars
+    if (latents %in% c("in","both")){
+      if (extra_vars==TRUE){
+        dircon_X<-x$dircon_X
+      }
+    }
+    if (latents %in% c("out","both")){
+      if (extra_vars==TRUE){
+        dircon_Y<-x$dircon_Y
+      }
+    }
+    fn<-x$fn
+    cat("\nBrief summary of NDRLM:\n")
+    cat("\nFunction call: ")
+    print(Call)
+    cat("\nNumber of independent variables: ",ncol(X))
+    cat("\nNumber of dependent variables: ",ncol(Y))
+    if (latents %in% c("in","both")){
+      cat("\nNumber of latent-independent variables: ",ncol(NDAin$factors))
+    }
+    if (latents %in% c("out","both")){
+      cat("\nNumber of latent-dependent variables: ",ncol(NDAout$factors))
+    }
+    if (latents %in% c("in","both")){
+      if (extra_vars==TRUE){
+        cat("\nNumber of dropped independent variables: ",sum((NDAin$membership==0)))
+      }
+    }
+    if (latents %in% c("out","both")){
+      if (extra_vars==TRUE){
+        cat("\nNumber of dropped dependent variables: ",sum((NDAout$membership==0)))
+      }
+    }
+    if (latents %in% c("in","both")){
+      cat("\n\nSummary of dimensionality reduction for independent variables\n")
+      print.nda(NDAin,digits = digits)
+    }
+    if (latents %in% c("out","both")){
+      cat("\n\nSummary of dimensionality reduction for dependent variables\n")
+      print.nda(NDAout,digits = digits)
+    }
+    cat("\n\nSummary of fitting\n")
+    if (optimized==TRUE){
+      cat("\nOptimized fittings\n")
+    }else{
+      cat("\nNon-optimized fittings\n")
+    }
+
+    dep<-Y
+    if (latents %in% c("out","both")){
+      if (extra_vars==TRUE){
+        dep<-cbind(NDAout$scores,Y[,NDAout$membership==0])
+        dep<-as.data.frame(dep)
+        colnames(dep)<-c(paste("NDAout",1:NDAout$factors,sep=""),
+                         colnames(Y)[NDAout$membership==0])
+      }else{
+        dep<-NDAout$scores
+        colnames(dep)<-paste("NDAout",1:NDAout$factors,sep="")
+      }
+    }
+    indep<-X
+    if (latents %in% c("in","both")){
+      if (extra_vars==TRUE){
+        indep<-cbind(NDAin$scores,X[,NDAin$membership==0])
+        indep<-as.data.frame(indep)
+        colnames(indep)<-c(paste("NDAin",1:NDAin$factors,sep=""),
+                           colnames(X)[NDAin$membership==0])
+      }else{
+        indep<-NDAin$scores
+        colnames(indep)<-paste("NDAin",1:NDAin$factors,sep="")
+      }
+    }
+
+    cat("\nList of dependent variables: ",toString(colnames(dep)))
+    cat("\nList of independent variables: ",toString(colnames(indep)))
+    if (latents %in% c("in","both")){
+      cat("\nList of latent-independent variables: ",toString(colnames(NDAin$scores)))
+      if (extra_vars==TRUE){
+        cat("\nList of non-groupped independent variables: ",toString(dircon_X))
+      }
+    }
+    if (latents %in% c("out","both")){
+      cat("\nList of latent-dependent variables: ",toString(colnames(NDAout$scores)))
+      if (extra_vars==TRUE){
+        cat("\nList of non-groupped independent variables: ",toString(dircon_Y))
+      }
+    }
+
+    for (i in 1:length(fits)){
+      cat("\nFitting for variable ",colnames(fits[[i]]$model)[1])
+      print(lm.beta::summary.lm.beta(lm.beta::lm.beta(fits[[i]])))
+    }
+  }else{
+    print(x,...)
+  }
+}
+
+## SUMMARY FOR NETWORK-BASED DIMENSIONALITY REDUCTION AND REGRESSION (NDRLM) ##
+summary.ndrlm <- function(object,  digits =  getOption("digits"), ...) {
+  if (!requireNamespace("stats", quietly = TRUE)) {
+    stop(
+      "Package \"stats\" must be installed to use this function.",
+      call. = FALSE
+    )
+  }
+  if (methods::is(object,"ndrlm")){
+    Call<-object$Call
+    fval<-object$fval
+    pareto<-object$pareto
+    X<-object$X
+    Y<-object$Y
+    latents<-object$latents
+    if (latents %in% c("in","both")){
+      NDAin<-object$NDAin
+      NDAin_weight<-object$NDAin_weight
+      NDAin_min_evalue<-object$NDAin_min_evalue
+      NDAin_min_communality<-object$NDAin_min_communality
+      NDAin_com_communalities<-object$NDAin_com_communalities
+      NDAin_min_R<-object$NDAin_com_communalities
+    }
+    if (latents %in% c("out","both")){
+      NDAout<-object$NDAout
+      NDAout_weight<-object$NDAout_weight
+      NDAout_min_evalue<-object$NDAout_min_evalue
+      NDAout_min_communality<-object$NDAout_min_communality
+      NDAout_com_communalities<-object$NDAout_com_communalities
+      NDAout_min_R<-object$NDAout_com_communalities
+    }
+    fits<-object$fits
+    optimized<-object$optimized
+    if (optimized==TRUE){
+      NSGA<-object$NSGA
+    }
+    extra_vars<-object$extra_vars
+    if (latents %in% c("in","both")){
+      if (extra_vars==TRUE){
+        dircon_X<-object$dircon_X
+      }
+    }
+    if (latents %in% c("out","both")){
+      if (extra_vars==TRUE){
+        dircon_Y<-object$dircon_Y
+      }
+    }
+    fn<-object$fn
+    results<-list(Call=Call,
+                  fval=fval,
+                  pareto=pareto,
+                  X = X,
+                  Y = Y,
+                  latents = latents,
+                  NDAin=unlist(ifelse(latents %in% c("in","both"),
+                                      list(NDAin),
+                                      list(NULL))),
+                  NDAin_weight=unlist(ifelse(latents %in% c("in","both"),
+                                             list(NDAin_weight),
+                                             list(NULL))),
+                  NDAin_min_evalue=unlist(ifelse(latents %in% c("in","both"),
+                                                 list(NDAin_min_evalue),
+                                                 list(NULL))),
+                  NDAin_min_communality=unlist(ifelse(latents %in% c("in","both"),
+                                                      list(NDAin_min_communality),
+                                                      list(NULL))),
+                  NDAin_com_communalities=unlist(ifelse(latents %in% c("in","both"),
+                                                        list(NDAin_com_communalities),
+                                                        list(NULL))),
+                  NDAin_min_R=unlist(ifelse(latents %in% c("in","both"),
+                                            list(NDAin_min_R),
+                                            list(NULL))),
+                  NDAout=unlist(ifelse(latents %in% c("out","both"),
+                                       list(NDAout),
+                                       list(NULL))),
+                  NDAout_weight=unlist(ifelse(latents %in% c("out","both"),
+                                              list(NDAout_weight),
+                                              list(NULL))),
+                  NDAout_min_evalue=unlist(ifelse(latents %in% c("out","both"),
+                                                  list(NDAout_min_evalue),
+                                                  list(NULL))),
+                  NDAout_min_communality=unlist(ifelse(latents %in% c("out","both"),
+                                                       list(NDAout_min_communality),
+                                                       list(NULL))),
+                  NDAout_com_communalities=unlist(ifelse(latents %in% c("out","both"),
+                                                         list(NDAout_com_communalities),
+                                                         list(NULL))),
+                  NDAout_min_R=unlist(ifelse(latents %in% c("out","both"),
+                                             list(NDAout_min_R),
+                                             list(NULL))),
+                  fits = fits,
+                  optimized=optimized,
+                  NSGA=unlist(ifelse(optimized==TRUE,
+                                     list(NSGA),
+                                     list(NULL))),
+                  extra_vars=extra_vars,
+                  dircon_X=unlist(ifelse((extra_vars==TRUE)&&latents %in% c("in","both"),
+                                         list(dircon_X),
+                                         list(NULL))),
+                  dircon_Y=unlist(ifelse((extra_vars==TRUE)&&latents %in% c("out","both"),
+                                         list(dircon_Y),
+                                         list(NULL))),
+                  fn=fn)
+    print.ndrlm(object)
+  }else{
+    summary(object,...)
+  }
+}
+
+
+### PLOT FOR NETWORK-BASED DIMENSIONALITY REDUCTION AND REGRESSION (NDRLM) ####
+plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
+  if (methods::is(x,"ndrlm")){
+    if (!requireNamespace("igraph", quietly = TRUE)) {
+      stop(
+        "Package \"igraph\" must be installed to use this function.",
+        call. = FALSE
+      )
+    }
+    if (!requireNamespace("stats", quietly = TRUE)) {
+      stop(
+        "Package \"stats\" must be installed to use this function.",
+        call. = FALSE
+      )
+    }
+    if (!requireNamespace("visNetwork", quietly = TRUE)) {
+      stop(
+        "Package \"visNetwork\" must be installed to use this function.",
+        call. = FALSE
+      )
+    }
+    if (!requireNamespace("lm.beta", quietly = TRUE)) {
+      stop(
+        "Package \"lm.beta\" must be installed to use this function.",
+        call. = FALSE
+      )
+    }
+    latents<-x$latents
+    extra_vars<-x$extra_vars
+    X<-x$X
+    Y<-x$Y
+
+    nY<-ncol(x$Y)
+    nSin<-0
+    if (latents %in% c("in","both")){
+      nSin<-ncol(x$NDAin$scores)
+      membership.X<-x$NDAin$membership
+      loadings.X<-x$NDAin$loadings
+    }
+    nSout<-0
+    if (latents %in% c("out","both")){
+      nSout<-ncol(x$NDAout$scores)
+      membership.Y<-x$NDAout$membership
+      loadings.Y<-x$NDAout$loadings
+    }
+    nX<-ncol(x$X)
+
+    node_ID<-1:(nY+nSout+nSin+nX)
+    node_label<-c(colnames(x$Y),
+                  unlist(ifelse(latents %in% c("out","both"),
+                                list(paste("NDAout",1:x$NDAout$factors,sep="")),
+                                list(NULL))),
+                  unlist(ifelse(latents %in% c("in","both"),
+                                list(paste("NDAin",1:x$NDAin$factors,sep="")),
+                                list(NULL))),colnames(x$X))
+
+    node_shape<-c(rep("rectangle",nY),
+                  unlist(ifelse(latents %in% c("out","both"),
+                                list(rep("circle",nSout)),
+                                list(NULL))),
+                  unlist(ifelse(latents %in% c("in","both"),
+                                list(rep("circle",nSin)),
+                                list(NULL))),
+                  rep("rectangle",nX))
+
+    node_color<-c(unlist(ifelse(latents %in% c("out","both"),
+                                list(x$NDAout$membership),
+                                list(rep(0,nY)))),
+                  unlist(ifelse(latents %in% c("out","both"),
+                                list(1:nSout),
+                                list(NULL))),
+                  unlist(ifelse(latents %in% c("in","both"),
+                                list(1:nSin),
+                                list(NULL))),
+                  unlist(ifelse(latents %in% c("in","both"),
+                                list(x$NDAin$membership),
+                                list(rep(0,nX)))))
+    nodes<-data.frame(id=node_ID,label=node_label,shape=node_shape,
+                      color=node_color)
+    edges <- data.frame(matrix(ncol = 3, nrow = 0))
+    colnames(edges) <- c('from', 'to', 'weight')
+
+    dep<-Y
+    if (latents %in% c("out","both")){
+      if (extra_vars==TRUE){
+        dep<-cbind(x$NDAout$scores,x$Y[,x$NDAout$membership==0])
+        dep<-as.data.frame(dep)
+        colnames(dep)<-c(paste("NDAout",1:x$NDAout$factors,sep=""),
+                         colnames(x$Y)[x$NDAout$membership==0])
+      }else{
+        dep<-x$NDAout$scores
+        colnames(dep)<-paste("NDAout",1:x$NDAout$factors,sep="")
+      }
+    }
+    indep<-X
+    if (latents %in% c("in","both")){
+      if (extra_vars==TRUE){
+        indep<-cbind(x$NDAin$scores,x$X[,x$NDAin$membership==0])
+        indep<-as.data.frame(indep)
+        colnames(indep)<-c(paste("NDAin",1:x$NDAin$factors,sep=""),
+                           colnames(x$X)[x$NDAin$membership==0])
+
+
+
+      }else{
+        indep<-x$NDAin$scores
+        colnames(indep)<-paste("NDAin",1:x$NDAin$factors,sep="")
+      }
+    }
+
+    k<-1
+    for (i in 1:length(x$fits)){
+      coefs<-as.vector(lm.beta::lm.beta(x$fits[[i]])$standardized.coefficients)[-1]
+      pvalues<-summary(x$fits[[i]])$coefficients[-1,4]
+      indepvars<-colnames(x$fits[[i]]$model)[-1]
+      depvar<-colnames(x$fits[[i]]$model)[1]
+      for (j in 1:length(coefs)){
+        if (pvalues[j]<sig){
+          edges[k,"to"]<-node_ID[node_label %in% depvar]
+          edges[k,"from"]<-node_ID[node_label %in% indepvars[j]]
+          edges[k,"weight"]<-coefs[j]
+          k<-k+1
+        }
+      }
+    }
+
+    if (latents %in% c("in","both")){
+      membership.X<-x$NDAin$membership
+      for (i in 1:nSin){
+        for (j in 1:length(membership.X)){
+          if (membership.X[j]==i){
+            edges[k,"from"]<-node_ID[node_label %in% colnames(x$X)[j]]
+            edges[k,"to"]<-node_ID[node_label %in% paste("NDAin",i,sep="")]
+            edges[k,"weight"]<-loadings.X[colnames(x$X)[j],i]
+            k<-k+1
+          }
+        }
+      }
+    }
+
+    if (latents %in% c("out","both")){
+      membership.Y<-x$NDAout$membership
+      for (i in 1:nSout){
+        for (j in 1:length(membership.Y)){
+          if (membership.Y[j]==i){
+            edges[k,"from"]<-node_ID[node_label %in% colnames(x$Y)[j]]
+            edges[k,"to"]<-node_ID[node_label %in% paste("NDAout",i,sep="")]
+            edges[k,"weight"]<-loadings.Y[colnames(x$Y)[j],i]
+            k<-k+1
+          }
+        }
+      }
+    }
+
+
+    space=150
+    cust_layout<-matrix(0,ncol=2,nrow=nY+nSin+nSout+nX)
+    cust_layout[1:nY,1]<-3
+    if (latents %in% c("out","both")){
+      cust_layout[sort(membership.Y,index.return=TRUE)$ix,2]<-((1:nY)-mean(1:nY))*space
+    }else{
+      cust_layout[1:nY,2]<-((1:nY)-mean(1:nY))*space
+    }
+
+    if (latents %in% c("out","both")){
+      cust_layout[(nY+1):(nY+nSout),1]<-2
+      cust_layout[(nY+1):(nY+nSout),2]<-((1:nSout)-mean(1:nSout))*space
+    }
+
+    if (latents %in% c("in","both")){
+      cust_layout[(nY+nSout+1):(nY+nSin+nSout),1]<-1
+      cust_layout[(nY+nSout+1):(nY+nSin+nSout),2]<-((1:nSin)-mean(1:nSin))*space
+    }
+
+    cust_layout[(nY+nSin+nSout+1):(nY+nSin+nSout+nX),1]<-0
+    if (latents %in% c("in","both")){
+      cust_layout[sort(membership.X,index.return=TRUE)$ix+nY+nSin+nSout,2]<-((1:nX)-mean(1:nX))*space
+    }else{
+      cust_layout[(nY+nSin+nSout+1):(nY+nSin+nSout+nX),2]<-((1:nX)-mean(1:nX))*space
+    }
+
+
+    G<-igraph::graph_from_data_frame(edges,
+                                     directed=TRUE,
+                                     vertices=nodes)
+
+    if (interactive==TRUE){
+      nodes$color<-grDevices::hsv((node_color+1)/max(node_color+1),
+                                  alpha=0.4)
+      edges$arrows=ifelse(igraph::is.directed(G),c("to"),"")
+      edges$width=(abs(igraph::E(G)$weight))
+      nodes$shape<-gsub("rectangle","box",nodes$shape)
+      nodes$shape<-gsub("circle","ellipse",nodes$shape)
+      edges$label<-as.vector(paste(round(edges$weight,2),sep=""))
+      nw <-
+        visNetwork::visIgraphLayout(
+          visNetwork::visNodes(
+            visNetwork::visInteraction(
+              visNetwork::visOptions(
+                visNetwork::visEdges(
+                  visNetwork::visNetwork(
+                    nodes, edges, height = "1000px", width = "100%"),
+                  font = list(size = 6),color="#555555",
+                  label=edges$label),
+                highlightNearest = TRUE, selectedBy = "label"),
+              dragNodes = TRUE,
+              dragView = TRUE,
+              zoomView = TRUE,
+              hideEdgesOnDrag = FALSE),physics=FALSE, size=16,
+            borderWidth = 1,
+            shape=nodes$shape,
+            font=list(face="calibri")),layout="layout.norm",
+          layoutMatrix = cust_layout,
+          physics = FALSE, type="full"
+        )
+      nw
+
+    }else{
+      plot(G,layout=cust_layout,edge.width=abs(igraph::E(G)$weight)*10,
+           edge.label=round(igraph::E(G)$weight,2))
+    }
+
+  }else{
+    plot(x,...)
+  }
+}

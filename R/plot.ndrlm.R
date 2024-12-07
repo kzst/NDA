@@ -38,29 +38,98 @@ plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
         call. = FALSE
       )
     }
+    latents<-x$latents
+    extra_vars<-x$extra_vars
+    X<-x$X
+    Y<-x$Y
+
     nY<-ncol(x$Y)
-    nS<-ncol(x$NDA$scores)
+    nSin<-0
+    if (latents %in% c("in","both")){
+      nSin<-ncol(x$NDAin$scores)
+      membership.X<-x$NDAin$membership
+      loadings.X<-x$NDAin$loadings
+    }
+    nSout<-0
+    if (latents %in% c("out","both")){
+      nSout<-ncol(x$NDAout$scores)
+      membership.Y<-x$NDAout$membership
+      loadings.Y<-x$NDAout$loadings
+    }
     nX<-ncol(x$X)
-    membership<-x$NDA$membership
-    loadings<-x$NDA$loadings
-    node_ID<-1:(nY+nS+nX)
-    node_label<-c(colnames(x$Y),colnames(x$NDA$scores),colnames(x$X))
-    node_shape<-c(rep("rectangle",nY),rep("circle",nS),
+
+    node_ID<-1:(nY+nSout+nSin+nX)
+    node_label<-c(colnames(x$Y),
+                  unlist(ifelse(latents %in% c("out","both"),
+                    list(paste("NDAout",1:x$NDAout$factors,sep="")),
+                    list(NULL))),
+                  unlist(ifelse(latents %in% c("in","both"),
+                    list(paste("NDAin",1:x$NDAin$factors,sep="")),
+                    list(NULL))),colnames(x$X))
+
+    node_shape<-c(rep("rectangle",nY),
+                  unlist(ifelse(latents %in% c("out","both"),
+                                list(rep("circle",nSout)),
+                                list(NULL))),
+                  unlist(ifelse(latents %in% c("in","both"),
+                                list(rep("circle",nSin)),
+                                list(NULL))),
                   rep("rectangle",nX))
-    nodes=data.frame(id=node_ID,label=node_label,shape=node_shape)
-    nodes_color<-c(rep(0,nY),1:nS,membership)
+
+    node_color<-c(unlist(ifelse(latents %in% c("out","both"),
+                                 list(x$NDAout$membership),
+                                 list(rep(0,nY)))),
+                   unlist(ifelse(latents %in% c("out","both"),
+                                 list(1:nSout),
+                                 list(NULL))),
+                   unlist(ifelse(latents %in% c("in","both"),
+                                 list(1:nSin),
+                                 list(NULL))),
+                   unlist(ifelse(latents %in% c("in","both"),
+                                 list(x$NDAin$membership),
+                                 list(rep(0,nX)))))
     nodes<-data.frame(id=node_ID,label=node_label,shape=node_shape,
-                      color=nodes_color)
+                      color=node_color)
     edges <- data.frame(matrix(ncol = 3, nrow = 0))
     colnames(edges) <- c('from', 'to', 'weight')
+
+    dep<-Y
+    if (latents %in% c("out","both")){
+      if (extra_vars==TRUE){
+        dep<-cbind(x$NDAout$scores,x$Y[,x$NDAout$membership==0])
+        dep<-as.data.frame(dep)
+        colnames(dep)<-c(paste("NDAout",1:x$NDAout$factors,sep=""),
+                         colnames(x$Y)[x$NDAout$membership==0])
+      }else{
+        dep<-x$NDAout$scores
+        colnames(dep)<-paste("NDAout",1:x$NDAout$factors,sep="")
+      }
+    }
+    indep<-X
+    if (latents %in% c("in","both")){
+      if (extra_vars==TRUE){
+        indep<-cbind(x$NDAin$scores,x$X[,x$NDAin$membership==0])
+        indep<-as.data.frame(indep)
+        colnames(indep)<-c(paste("NDAin",1:x$NDAin$factors,sep=""),
+                         colnames(x$X)[x$NDAin$membership==0])
+
+
+
+      }else{
+        indep<-x$NDAin$scores
+        colnames(indep)<-paste("NDAin",1:x$NDAin$factors,sep="")
+      }
+    }
+
     k<-1
-    for (i in 1:nY){
+    for (i in 1:length(x$fits)){
       coefs<-as.vector(lm.beta::lm.beta(x$fits[[i]])$standardized.coefficients)[-1]
       pvalues<-summary(x$fits[[i]])$coefficients[-1,4]
       indepvars<-colnames(x$fits[[i]]$model)[-1]
+      depvar<-colnames(x$fits[[i]]$model)[1]
       for (j in 1:length(coefs)){
         if (pvalues[j]<sig){
-          edges[k,"to"]<-i
+          edges[k,"to"]<-node_ID[node_label %in% depvar]
           edges[k,"from"]<-node_ID[node_label %in% indepvars[j]]
           edges[k,"weight"]<-coefs[j]
           k<-k+1
@@ -68,32 +137,68 @@ plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
       }
     }
 
-    for (i in 1:nX){
-      for (j in 1:nS){
-        if (membership[i]==j){
-          edges[k,"to"]<-nY+j
-          edges[k,"from"]<-nY+nS+i
-          edges[k,"weight"]<-loadings[colnames(x$X)[i],j]
-          k<-k+1
+    if (latents %in% c("in","both")){
+      membership.X<-x$NDAin$membership
+      for (i in 1:nSin){
+        for (j in 1:length(membership.X)){
+          if (membership.X[j]==i){
+            edges[k,"from"]<-node_ID[node_label %in% colnames(x$X)[j]]
+            edges[k,"to"]<-node_ID[node_label %in% paste("NDAin",i,sep="")]
+            edges[k,"weight"]<-loadings.X[colnames(x$X)[j],i]
+            k<-k+1
+          }
         }
       }
     }
+
+    if (latents %in% c("out","both")){
+      membership.Y<-x$NDAout$membership
+      for (i in 1:nSout){
+        for (j in 1:length(membership.Y)){
+          if (membership.Y[j]==i){
+            edges[k,"from"]<-node_ID[node_label %in% colnames(x$Y)[j]]
+            edges[k,"to"]<-node_ID[node_label %in% paste("NDAout",i,sep="")]
+            edges[k,"weight"]<-loadings.Y[colnames(x$Y)[j],i]
+            k<-k+1
+          }
+        }
+      }
+    }
+
+
     space=150
-    cust_layout<-matrix(0,ncol=2,nrow=nY+nS+nX)
-    cust_layout[1:nY,1]<-2
-    cust_layout[1:nY,2]<-((1:nY)-mean(1:nY))*space
-    cust_layout[(nY+1):(nY+nS),1]<-1
-    cust_layout[(nY+1):(nY+nS),2]<-((1:nS)-mean(1:nS))*space
-    cust_layout[(nY+nS+1):(nY+nS+nX),1]<-0
-    cust_layout[(nY+nS+1):(nY+nS+nX),2]<-((1:nX)-mean(1:nX))*space
+    cust_layout<-matrix(0,ncol=2,nrow=nY+nSin+nSout+nX)
+    cust_layout[1:nY,1]<-3
+    if (latents %in% c("out","both")){
+      cust_layout[sort(membership.Y,index.return=TRUE)$ix,2]<-((1:nY)-mean(1:nY))*space
+    }else{
+      cust_layout[1:nY,2]<-((1:nY)-mean(1:nY))*space
+    }
+
+    if (latents %in% c("out","both")){
+      cust_layout[(nY+1):(nY+nSout),1]<-2
+      cust_layout[(nY+1):(nY+nSout),2]<-((1:nSout)-mean(1:nSout))*space
+    }
+
+    if (latents %in% c("in","both")){
+      cust_layout[(nY+nSout+1):(nY+nSin+nSout),1]<-1
+      cust_layout[(nY+nSout+1):(nY+nSin+nSout),2]<-((1:nSin)-mean(1:nSin))*space
+    }
+
+    cust_layout[(nY+nSin+nSout+1):(nY+nSin+nSout+nX),1]<-0
+    if (latents %in% c("in","both")){
+      cust_layout[sort(membership.X,index.return=TRUE)$ix+nY+nSin+nSout,2]<-((1:nX)-mean(1:nX))*space
+    }else{
+      cust_layout[(nY+nSin+nSout+1):(nY+nSin+nSout+nX),2]<-((1:nX)-mean(1:nX))*space
+    }
+
 
     G<-igraph::graph_from_data_frame(edges,
                              directed=TRUE,
                              vertices=nodes)
 
     if (interactive==TRUE){
-      nodes$color<-grDevices::hsv((c(rep(0,nY),1:nS,membership)+1)/
-                                    max((c(rep(0,nY),1:nS,membership)+1)),
+      nodes$color<-grDevices::hsv((node_color+1)/max(node_color+1),
                                   alpha=0.4)
       edges$arrows=ifelse(igraph::is.directed(G),c("to"),"")
       edges$width=(abs(igraph::E(G)$weight))
