@@ -117,10 +117,34 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
                        use_rotation=use_rotation,
                        rotation=rotation),silent=TRUE)
     }
+    dep<-Y
+    if (latents %in% c("out","both")){
+      if (extra_vars==TRUE){
+        dep<-cbind(NDA_out$scores,dropped_Y)
+        dep<-as.data.frame(dep)
+        colnames(dep)<-c(paste("NDAout",1:NDA_out$factors,sep=""),
+                         colnames(dropped_Y))
+      }else{
+        dep<-NDA_out$scores
+        colnames(dep)<-paste("NDAout",1:NDA_out$factors,sep="")
+      }
+    }
+    indep<-X
+    if (latents %in% c("in","both")){
+      if (extra_vars==TRUE){
+        indep<-cbind(NDA_in$scores,dropped_X)
+        indep<-as.data.frame(indep)
+        colnames(indep)<-c(paste("NDAin",1:NDA_in$factors,sep=""),
+                           colnames(dropped_X))
+      }else{
+        indep<-NDA_in$scores
+        colnames(indep)<-paste("NDAin",1:NDA_in$factors,sep="")
+      }
+    }
     if (pareto==FALSE){
       res=0
     }else{
-      res<-c(rep(0,ncol(Y)))
+      res<-c(rep(0,ncol(dep)))
     }
     error<-FALSE
     if (latents %in% c("in","both")){
@@ -152,30 +176,7 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
           }
         }
       }
-      dep<-Y
-      if (latents %in% c("out","both")){
-        if (extra_vars==TRUE){
-          dep<-cbind(NDA_out$scores,dropped_Y)
-          dep<-as.data.frame(dep)
-          colnames(dep)<-c(paste("NDAout",1:NDA_out$factors,sep=""),
-                           colnames(dropped_Y))
-        }else{
-          dep<-NDA_out$scores
-          colnames(dep)<-paste("NDAout",1:NDA_out$factors,sep="")
-        }
-      }
-      indep<-X
-      if (latents %in% c("in","both")){
-        if (extra_vars==TRUE){
-          indep<-cbind(NDA_in$scores,dropped_X)
-          indep<-as.data.frame(indep)
-          colnames(indep)<-c(paste("NDAin",1:NDA_in$factors,sep=""),
-                           colnames(dropped_X))
-        }else{
-          indep<-NDA_in$scores
-          colnames(indep)<-paste("NDAin",1:NDA_in$factors,sep="")
-        }
-      }
+
 
       for (i in 1:ncol(dep))
       {

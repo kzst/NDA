@@ -65,10 +65,10 @@ print.ndrlm <- function(x, digits = getOption("digits"), ...) {
     cat("\nNumber of independent variables: ",ncol(X))
     cat("\nNumber of dependent variables: ",ncol(Y))
     if (latents %in% c("in","both")){
-      cat("\nNumber of latent-independent variables: ",ncol(NDAin$factors))
+      cat("\nNumber of latent-independent variables: ",NDAin$factors)
     }
     if (latents %in% c("out","both")){
-      cat("\nNumber of latent-dependent variables: ",ncol(NDAout$factors))
+      cat("\nNumber of latent-dependent variables: ",NDAout$factors)
     }
     if (latents %in% c("in","both")){
       if (extra_vars==TRUE){
