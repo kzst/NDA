@@ -123,13 +123,13 @@ print.ndrlm <- function(x, digits = getOption("digits"), ...) {
     cat("\nList of dependent variables: ",toString(colnames(dep)))
     cat("\nList of independent variables: ",toString(colnames(indep)))
     if (latents %in% c("in","both")){
-      cat("\nList of latent-independent variables: ",toString(colnames(NDAin$scores)))
+      cat("\nList of latent-independent variables: ",toString(paste("NDAin",1:NDAin$factors,sep="")))
       if (extra_vars==TRUE){
         cat("\nList of non-groupped independent variables: ",toString(dircon_X))
       }
     }
     if (latents %in% c("out","both")){
-      cat("\nList of latent-dependent variables: ",toString(colnames(NDAout$scores)))
+      cat("\nList of latent-dependent variables: ",toString(paste("NDAout",1:NDAout$factors,sep="")))
       if (extra_vars==TRUE){
         cat("\nList of non-groupped independent variables: ",toString(dircon_Y))
       }
