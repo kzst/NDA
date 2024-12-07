@@ -35,7 +35,7 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
   }
   Y<-as.data.frame(Y)
   X<-as.data.frame(X)
-
+  extra_vars=dircon
   weight.X<-rep(1,ncol(X))
   weight.Y<-rep(1,ncol(Y))
   latent.X<-c(0,0,0,0)
@@ -117,50 +117,26 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
                        use_rotation=use_rotation,
                        rotation=rotation),silent=TRUE)
     }
-    dep<-Y
-    if (latents %in% c("out","both")){
-      if (extra_vars==TRUE){
-        dep<-cbind(NDA_out$scores,dropped_Y)
-        dep<-as.data.frame(dep)
-        colnames(dep)<-c(paste("NDAout",1:NDA_out$factors,sep=""),
-                         colnames(dropped_Y))
-      }else{
-        dep<-NDA_out$scores
-        colnames(dep)<-paste("NDAout",1:NDA_out$factors,sep="")
-      }
-    }
-    indep<-X
-    if (latents %in% c("in","both")){
-      if (extra_vars==TRUE){
-        indep<-cbind(NDA_in$scores,dropped_X)
-        indep<-as.data.frame(indep)
-        colnames(indep)<-c(paste("NDAin",1:NDA_in$factors,sep=""),
-                           colnames(dropped_X))
-      }else{
-        indep<-NDA_in$scores
-        colnames(indep)<-paste("NDAin",1:NDA_in$factors,sep="")
-      }
-    }
-    if (pareto==FALSE){
-      res=0
+
+    if (pareto==TRUE){
+      res<-rep(0,ncol(Y))
     }else{
-      res<-c(rep(0,ncol(dep)))
+      res<-0
     }
     error<-FALSE
+    if (latents %in% c("out","both")){
+      if (inherits(NDA_out,"try-error")){
+        error<-TRUE
+        return(res)
+      }
+    }
+
     if (latents %in% c("in","both")){
       if (inherits(NDA_in,"try-error")){
         error<-TRUE
         return(res)
       }
-    }else{
-      if (latents %in% c("out","both")){
-        if (inherits(NDA_out,"try-error")){
-          error<-TRUE
-          return(res)
-        }
-      }
     }
-
     if (error==FALSE){
       extra_vars<-FALSE
       if (latents %in% c("in","both")){
@@ -176,6 +152,32 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
           }
         }
       }
+      dep<-Y
+      if (latents %in% c("out","both")){
+        if (extra_vars==TRUE){
+          dep<-cbind(NDA_out$scores,dropped_Y)
+          dep<-as.data.frame(dep)
+          colnames(dep)<-c(paste("NDAout",1:NDA_out$factors,sep=""),
+                           colnames(dropped_Y))
+        }else{
+          dep<-NDA_out$scores
+          colnames(dep)<-paste("NDAout",1:NDA_out$factors,sep="")
+        }
+      }
+      indep<-X
+      if (latents %in% c("in","both")){
+        if (extra_vars==TRUE){
+          indep<-cbind(NDA_in$scores,dropped_X)
+          indep<-as.data.frame(indep)
+          colnames(indep)<-c(paste("NDAin",1:NDA_in$factors,sep=""),
+                             colnames(dropped_X))
+        }else{
+          indep<-NDA_in$scores
+          colnames(indep)<-paste("NDAin",1:NDA_in$factors,sep="")
+        }
+      }
+
+
 
 
       for (i in 1:ncol(dep))
