@@ -39,7 +39,9 @@ plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
       )
     }
     latents<-x$latents
-    extra_vars<-x$extra_vars
+    extra_vars.X<-x$extra_vars.X
+    extra_vars.Y<-x$extra_vars.Y
+
     X<-x$X
     Y<-x$Y
 
@@ -95,7 +97,7 @@ plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
 
     dep<-Y
     if (latents %in% c("out","both")){
-      if (extra_vars==TRUE){
+      if (extra_vars.Y==TRUE){
         dep<-cbind(x$NDAout$scores,x$Y[,x$NDAout$membership==0])
         dep<-as.data.frame(dep)
         colnames(dep)<-c(paste("NDAout",1:x$NDAout$factors,sep=""),
@@ -107,7 +109,7 @@ plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
     }
     indep<-X
     if (latents %in% c("in","both")){
-      if (extra_vars==TRUE){
+      if (extra_vars.X==TRUE){
         indep<-cbind(x$NDAin$scores,x$X[,x$NDAin$membership==0])
         indep<-as.data.frame(indep)
         colnames(indep)<-c(paste("NDAin",1:x$NDAin$factors,sep=""),

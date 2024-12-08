@@ -35,7 +35,8 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
   }
   Y<-as.data.frame(Y)
   X<-as.data.frame(X)
-  extra_vars=dircon
+  extra_vars.X=dircon
+  extra_vars.Y=dircon
   weight.X<-rep(1,ncol(X))
   weight.Y<-rep(1,ncol(Y))
   latent.X<-c(0,0,0,0)
@@ -71,7 +72,7 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
              upper.bounds.y,upper.bounds.latenty),
     "none"=NULL
   )
-  cost<-function(hyperparams){
+  cost<-function(hyperparams){ # Cost function
     if ("in" %in% latents){
       weight.X<-hyperparams[1:ncol(X)]
       params.X<-hyperparams[-c(1:ncol(X))]
@@ -138,27 +139,30 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
       }
     }
     if (error==FALSE){
-      extra_vars<-FALSE
+      extra_vars.X<-FALSE
+      extra_vars.Y<-FALSE
+      dropped_X<-NULL
+      dropped_Y<-NULL
       if (latents %in% c("in","both")){
         if ((dircon==TRUE)&&(sum(NDA_in$membership==0)>0)){
-          extra_vars<-TRUE
+          extra_vars.X<-TRUE
           dropped_X<-X[,NDA_in$membership==0]
         }
       }else{
         if (latents %in% c("out","both")){
           if ((dircon==TRUE)&&(sum(NDA_out$membership==0)>0)){
-            extra_vars<-TRUE
+            extra_vars.Y<-TRUE
             dropped_Y<-Y[,NDA_out$membership==0]
           }
         }
       }
       dep<-Y
       if (latents %in% c("out","both")){
-        if (extra_vars==TRUE){
+        if (extra_vars.Y==TRUE){
           dep<-cbind(NDA_out$scores,dropped_Y)
           dep<-as.data.frame(dep)
           colnames(dep)<-c(paste("NDAout",1:NDA_out$factors,sep=""),
-                           colnames(dropped_Y))
+                           colnames(Y)[NDA_out$membership==0])
         }else{
           dep<-NDA_out$scores
           colnames(dep)<-paste("NDAout",1:NDA_out$factors,sep="")
@@ -166,11 +170,11 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
       }
       indep<-X
       if (latents %in% c("in","both")){
-        if (extra_vars==TRUE){
+        if (extra_vars.X==TRUE){
           indep<-cbind(NDA_in$scores,dropped_X)
           indep<-as.data.frame(indep)
           colnames(indep)<-c(paste("NDAin",1:NDA_in$factors,sep=""),
-                             colnames(dropped_X))
+                             colnames(X)[NDA_in$membership==0])
         }else{
           indep<-NDA_in$scores
           colnames(indep)<-paste("NDAin",1:NDA_in$factors,sep="")
@@ -270,27 +274,28 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
                      rotation=rotation),silent=TRUE)
   }
   fits<-list()
-  extra_vars<-FALSE
+  extra_vars.X<-FALSE
+  extra_vars.Y<-FALSE
   if (latents %in% c("in","both")){
     if ((dircon==TRUE)&&(sum(NDA_in$membership==0)>0)){
-      extra_vars<-TRUE
+      extra_vars.X<-TRUE
       dropped_X<-X[,NDA_in$membership==0]
     }
   }else{
     if (latents %in% c("out","both")){
       if ((dircon==TRUE)&&(sum(NDA_out$membership==0)>0)){
-        extra_vars<-TRUE
+        extra_vars.Y<-TRUE
         dropped_Y<-Y[,NDA_out$membership==0]
       }
     }
   }
   dep<-Y
   if (latents %in% c("out","both")){
-    if (extra_vars==TRUE){
+    if ((extra_vars.Y==TRUE)&&(!is.null(dropped_Y))){
       dep<-cbind(NDA_out$scores,dropped_Y)
       dep<-as.data.frame(dep)
       colnames(dep)<-c(paste("NDAout",1:NDA_out$factors,sep=""),
-                       colnames(dropped_Y))
+                       colnames(Y)[NDA_out$membership==0])
     }else{
       dep<-NDA_out$scores
       colnames(dep)<-paste("NDAout",1:NDA_out$factors,sep="")
@@ -298,11 +303,11 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
   }
   indep<-X
   if (latents %in% c("in","both")){
-    if (extra_vars==TRUE){
+    if ((extra_vars.X==TRUE)&&(!is.null(dropped_X))){
       indep<-cbind(NDA_in$scores,dropped_X)
       indep<-as.data.frame(indep)
       colnames(indep)<-c(paste("NDAin",1:NDA_in$factors,sep=""),
-                         colnames(dropped_X))
+                         colnames(X)[NDA_in$membership==0])
     }else{
       indep<-NDA_in$scores
       colnames(indep)<-paste("NDAin",1:NDA_in$factors,sep="")
@@ -353,14 +358,15 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
   if (optimize==TRUE){
     P$NSGA<-NSGA
   }
-  P$extra_vars<-extra_vars
+  P$extra_vars.X<-extra_vars.X
+  P$extra_vars.Y<-extra_vars.Y
   if (latents %in% c("in","both")){
-    if (extra_vars==TRUE){
+    if (extra_vars.X==TRUE){
       P$dircon_X<-colnames(dropped_X)
     }
   }
   if (latents %in% c("out","both")){
-    if (extra_vars==TRUE){
+    if (extra_vars.Y==TRUE){
       P$dircon_Y<-colnames(dropped_Y)
     }
   }

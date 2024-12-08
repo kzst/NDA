@@ -47,14 +47,15 @@ summary.ndrlm <- function(object,  digits =  getOption("digits"), ...) {
     if (optimized==TRUE){
       NSGA<-object$NSGA
     }
-    extra_vars<-object$extra_vars
+    extra_vars.X<-object$extra_vars.X
+    extra_vars.Y<-object$extra_vars.Y
     if (latents %in% c("in","both")){
-      if (extra_vars==TRUE){
+      if (extra_vars.X==TRUE){
         dircon_X<-object$dircon_X
       }
     }
     if (latents %in% c("out","both")){
-      if (extra_vars==TRUE){
+      if (extra_vars.Y==TRUE){
         dircon_Y<-object$dircon_Y
       }
     }
@@ -106,11 +107,12 @@ summary.ndrlm <- function(object,  digits =  getOption("digits"), ...) {
                     NSGA=unlist(ifelse(optimized==TRUE,
                                        list(NSGA),
                                        list(NULL))),
-                    extra_vars=extra_vars,
-                    dircon_X=unlist(ifelse((extra_vars==TRUE)&&latents %in% c("in","both"),
+                    extra_vars.X=extra_vars.X,
+                    extra_vars.Y=extra_vars.Y,
+                    dircon_X=unlist(ifelse((extra_vars.X==TRUE)&&latents %in% c("in","both"),
                                      list(dircon_X),
                                      list(NULL))),
-                    dircon_Y=unlist(ifelse((extra_vars==TRUE)&&latents %in% c("out","both"),
+                    dircon_Y=unlist(ifelse((extra_vars.Y==TRUE)&&latents %in% c("out","both"),
                                          list(dircon_Y),
                                          list(NULL))),
                     fn=fn)

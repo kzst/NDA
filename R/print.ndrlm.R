@@ -47,14 +47,15 @@ print.ndrlm <- function(x, digits = getOption("digits"), ...) {
     if (optimized==TRUE){
       NSGA<-x$NSGA
     }
-    extra_vars<-x$extra_vars
+    extra_vars.X<-x$extra_vars.X
+    extra_vars.Y<-x$extra_vars.Y
     if (latents %in% c("in","both")){
-      if (extra_vars==TRUE){
+      if (extra_vars.X==TRUE){
         dircon_X<-x$dircon_X
       }
     }
     if (latents %in% c("out","both")){
-      if (extra_vars==TRUE){
+      if (extra_vars.Y==TRUE){
         dircon_Y<-x$dircon_Y
       }
     }
@@ -71,12 +72,12 @@ print.ndrlm <- function(x, digits = getOption("digits"), ...) {
       cat("\nNumber of latent-dependent variables: ",NDAout$factors)
     }
     if (latents %in% c("in","both")){
-      if (extra_vars==TRUE){
+      if (extra_vars.X==TRUE){
         cat("\nNumber of dropped independent variables: ",sum((NDAin$membership==0)))
       }
     }
     if (latents %in% c("out","both")){
-      if (extra_vars==TRUE){
+      if (extra_vars.Y==TRUE){
         cat("\nNumber of dropped dependent variables: ",sum((NDAout$membership==0)))
       }
     }
@@ -97,7 +98,7 @@ print.ndrlm <- function(x, digits = getOption("digits"), ...) {
 
     dep<-Y
     if (latents %in% c("out","both")){
-      if (extra_vars==TRUE){
+      if (extra_vars.Y==TRUE){
         dep<-cbind(NDAout$scores,Y[,NDAout$membership==0])
         dep<-as.data.frame(dep)
         colnames(dep)<-c(paste("NDAout",1:NDAout$factors,sep=""),
@@ -109,7 +110,7 @@ print.ndrlm <- function(x, digits = getOption("digits"), ...) {
     }
     indep<-X
     if (latents %in% c("in","both")){
-      if (extra_vars==TRUE){
+      if (extra_vars.X==TRUE){
         indep<-cbind(NDAin$scores,X[,NDAin$membership==0])
         indep<-as.data.frame(indep)
         colnames(indep)<-c(paste("NDAin",1:NDAin$factors,sep=""),
@@ -124,13 +125,13 @@ print.ndrlm <- function(x, digits = getOption("digits"), ...) {
     cat("\nList of independent variables: ",toString(colnames(indep)))
     if (latents %in% c("in","both")){
       cat("\nList of latent-independent variables: ",toString(paste("NDAin",1:NDAin$factors,sep="")))
-      if (extra_vars==TRUE){
+      if (extra_vars.X==TRUE){
         cat("\nList of non-groupped independent variables: ",toString(dircon_X))
       }
     }
     if (latents %in% c("out","both")){
       cat("\nList of latent-dependent variables: ",toString(paste("NDAout",1:NDAout$factors,sep="")))
-      if (extra_vars==TRUE){
+      if (extra_vars.Y==TRUE){
         cat("\nList of non-groupped independent variables: ",toString(dircon_Y))
       }
     }

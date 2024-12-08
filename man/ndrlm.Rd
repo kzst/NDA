@@ -90,7 +90,8 @@ minimal square correlation between indicators (used in \code{\link{ndr}})}
 \item{fits}{List of linear regrassion models}
 \item{otimized}{Wheter fittings are optimized or not}
 \item{NSGA}{Outpot structure of NSGA-II optimization (list), if the optimization value is true (see in \code{\link[mco:nsga2]{mco::nsga2}})}
-\item{extra_vars}{Logic variable. If direct connection (dircon=TRUE) is allowed not only the latent but the excluded input variables are analyized in the linear models as extra input variables.}
+\item{extra_vars.X}{Logic variable. If direct connection (dircon=TRUE) is allowed not only the latent but the excluded input variables are analyized in the linear models as extra input variables.}
+\item{extra_vars.Y}{Logic variable. If direct connection (dircon=TRUE) is allowed not only the latent but the excluded output variables are analyized in the linear models as extra input variables.}
 \item{dircon_X}{The list of input variables which are directly connected to output variables.}
 \item{dircon_Y}{The list of output variables which are directly connected to output variables.}
 \item{fn}{Function (regression) name: NDLM}
