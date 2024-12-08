@@ -143,16 +143,27 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
       extra_vars.Y<-FALSE
       dropped_X<-NULL
       dropped_Y<-NULL
-      if (latents %in% c("in","both")){
+      if (latents %in% c("in")){
         if ((dircon==TRUE)&&(sum(NDA_in$membership==0)>0)){
           extra_vars.X<-TRUE
           dropped_X<-X[,NDA_in$membership==0]
         }
       }else{
-        if (latents %in% c("out","both")){
+        if (latents %in% c("out")){
           if ((dircon==TRUE)&&(sum(NDA_out$membership==0)>0)){
             extra_vars.Y<-TRUE
             dropped_Y<-Y[,NDA_out$membership==0]
+          }
+        }else{
+          if (latents %in% c("both")){
+            if ((dircon==TRUE)&&(sum(NDA_in$membership==0)>0)){
+              extra_vars.X<-TRUE
+              dropped_X<-X[,NDA_in$membership==0]
+            }
+            if ((dircon==TRUE)&&(sum(NDA_out$membership==0)>0)){
+              extra_vars.Y<-TRUE
+              dropped_Y<-Y[,NDA_out$membership==0]
+            }
           }
         }
       }
@@ -276,19 +287,32 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
   fits<-list()
   extra_vars.X<-FALSE
   extra_vars.Y<-FALSE
-  if (latents %in% c("in","both")){
+
+  if (latents %in% c("in")){
     if ((dircon==TRUE)&&(sum(NDA_in$membership==0)>0)){
       extra_vars.X<-TRUE
       dropped_X<-X[,NDA_in$membership==0]
     }
   }else{
-    if (latents %in% c("out","both")){
+    if (latents %in% c("out")){
       if ((dircon==TRUE)&&(sum(NDA_out$membership==0)>0)){
         extra_vars.Y<-TRUE
         dropped_Y<-Y[,NDA_out$membership==0]
       }
+    }else{
+      if (latents %in% c("both")){
+        if ((dircon==TRUE)&&(sum(NDA_in$membership==0)>0)){
+          extra_vars.X<-TRUE
+          dropped_X<-X[,NDA_in$membership==0]
+        }
+        if ((dircon==TRUE)&&(sum(NDA_out$membership==0)>0)){
+          extra_vars.Y<-TRUE
+          dropped_Y<-Y[,NDA_out$membership==0]
+        }
+      }
     }
   }
+
   dep<-Y
   if (latents %in% c("out","both")){
     if ((extra_vars.Y==TRUE)&&(!is.null(dropped_Y))){
