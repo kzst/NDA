@@ -384,6 +384,7 @@ ndr<-function(r,covar=FALSE,cor_method=1,cor_type=1,min_R=0,min_comm=2,Gamma=1,
       }
       L[,i]<-result
     }
+    centers<-colMeans(L)
     if (ncol(L)>1 && use_rotation==TRUE){
       L<-psych::principal(L,nfactors = dim(L)[2],
                           rotate = rotation)$scores
@@ -429,7 +430,12 @@ ndr<-function(r,covar=FALSE,cor_method=1,cor_type=1,min_R=0,min_comm=2,Gamma=1,
   }
   P$n.obs<-nrow(DATA)
   P$R<-R
+  P$EVCs<-EVCs
+  P$center<-centers
   P$membership<-S
+  P$weight<-weight
+  P$use_rotation<-use_rotation
+  P$rotation<-rotation
   P$fn<-"NDA"
   P$Call<-cl
   class(P) <- c("nda","list")

@@ -92,8 +92,8 @@ plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
                                  list(rep(0,nX)))))
     nodes<-data.frame(id=node_ID,label=node_label,shape=node_shape,
                       color=node_color)
-    edges <- data.frame(matrix(ncol = 3, nrow = 0))
-    colnames(edges) <- c('from', 'to', 'weight')
+    edges <- data.frame(matrix(ncol = 6, nrow = 0))
+    colnames(edges) <- c('from', 'to', 'weight' , 'color' , 'lty' , 'dashes')
 
     dep<-Y
     if (latents %in% c("out","both")){
@@ -134,6 +134,9 @@ plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
           edges[k,"to"]<-node_ID[node_label %in% depvar]
           edges[k,"from"]<-node_ID[node_label %in% indepvars[j]]
           edges[k,"weight"]<-coefs[j]
+          edges[k,"color"]<-"black"
+          edges[k,"lty"]<-"solid"
+          edges[k,"dashes"]<-FALSE
           k<-k+1
         }
       }
@@ -147,6 +150,9 @@ plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
             edges[k,"from"]<-node_ID[node_label %in% colnames(x$X)[j]]
             edges[k,"to"]<-node_ID[node_label %in% paste("NDAin",i,sep="")]
             edges[k,"weight"]<-loadings.X[colnames(x$X)[j],i]
+            edges[k,"color"]<-"grey"
+            edges[k,"lty"]<-"dashed"
+            edges[k,"dashes"]<-TRUE
             k<-k+1
           }
         }
@@ -161,6 +167,9 @@ plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
             edges[k,"from"]<-node_ID[node_label %in% colnames(x$Y)[j]]
             edges[k,"to"]<-node_ID[node_label %in% paste("NDAout",i,sep="")]
             edges[k,"weight"]<-loadings.Y[colnames(x$Y)[j],i]
+            edges[k,"color"]<-"grey"
+            edges[k,"lty"]<-"dashed"
+            edges[k,"dashes"]<-TRUE
             k<-k+1
           }
         }
@@ -231,7 +240,7 @@ plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
       nw
 
     }else{
-      plot(G,layout=cust_layout,edge.width=abs(igraph::E(G)$weight)*10,
+      igraph::plot.igraph(G,layout=cust_layout,edge.width=abs(igraph::E(G)$weight)*10,
            edge.label=round(igraph::E(G)$weight,2))
     }
 

@@ -42,8 +42,14 @@ NDA both works on low and high simple size datasets. If min_evalue=min_communali
 \item{loadings}{A standard loading matrix of class “loadings".}
 \item{uniqueness}{Uniqueness values of indicators.}
 \item{factors}{Number of found factors.}
+\item{EVCs}{The list eigenvector centrality value of indicators.}
+\item{membership}{The membership value of indicators.}
+\item{weight}{The weight of indicators.}
 \item{scores}{Estimates of the factor scores are reported (if covar=FALSE).}
+\item{centers}{Colum mean of unstandardized score values.}
 \item{n.obs}{Number of observations specified or found.}
+\item{use_rotation}{FALSE no rotation (default), TRUE the rotation is used.}
+\item{rotation}{"none", "varimax", "quartimax", "promax", "oblimin", "simplimax", and "cluster" are possible rotations/transformations of the solution. "oblimin" is the default, if use_rotation is TRUE.}
 \item{fn}{Factor name: NDA}
 \item{Call}{Callback function}
 }
