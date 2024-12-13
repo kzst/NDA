@@ -209,10 +209,10 @@ plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
                              vertices=nodes)
 
     if (interactive==TRUE){
+      edges$arrows<-ifelse(igraph::is.directed(G),c("to"),"")
+      edges$width<-(abs(igraph::E(G)$weight))
       nodes$color<-grDevices::hsv((node_color+1)/max(node_color+1),
                                   alpha=0.4)
-      edges$arrows=ifelse(igraph::is.directed(G),c("to"),"")
-      edges$width=(abs(igraph::E(G)$weight))
       nodes$shape<-gsub("rectangle","box",nodes$shape)
       nodes$shape<-gsub("circle","ellipse",nodes$shape)
       edges$label<-as.vector(paste(round(edges$weight,2),sep=""))
@@ -238,10 +238,33 @@ plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
           physics = FALSE, type="full"
         )
       nw
+      return(nw)
 
     }else{
-      igraph::plot.igraph(G,layout=cust_layout,edge.width=abs(igraph::E(G)$weight)*10,
-           edge.label=round(igraph::E(G)$weight,2))
+      igraph::V(G)$color<-grDevices::hsv((node_color+1)/max(node_color+1),
+                                  alpha=0.4)
+      igraph::plot.igraph(G,layout=cust_layout,edge.width=abs(igraph::E(G)$weight)*5,
+           edge.label=round(igraph::E(G)$weight,2),vertex.size=50)
+
+      #ggraph(G, layout = cust_layout, circular = FALSE) +
+      #  geom_edge_diagonal(arrow = arrow(angle = 8, length = unit(0.10, "inches"),
+      #                                   ends = "last", type = "closed"),width=0.1) +
+      #  geom_node_point(size=10,aes(color=V(G)$color,
+      #                      shape=factor(V(G)$shape,
+      #                                   labels=c("circle","rectangle")))) +
+      #  scale_shape_manual (labels = c("latents","indicators"),
+      #                      values = c(16,15)) +
+      #  scale_color_distiller(palette="Set3") +
+      #  guides(shape = guide_legend(""),
+      #         color=guide_none(),
+      #         size = guide_none()) +
+      #  geom_node_text (aes (label = label),
+      #  hjust = -0.1, vjust = 0.5,size=4,
+      #                  colour = "#3333AA") +
+      #  theme(legend.position = "bottom",
+      #        panel.background = element_rect(fill="white"),
+      #        plot.margin = margin(3, 3, 3, 3, "cm"))
+      return(G)
     }
 
   }else{
