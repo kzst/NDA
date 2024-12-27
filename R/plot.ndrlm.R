@@ -202,7 +202,16 @@ plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
     }else{
       cust_layout[(nY+nSin+nSout+1):(nY+nSin+nSout+nX),2]<-((1:nX)-mean(1:nX))*space
     }
-
+    if (latents %in% c("in","both")){
+      for (i in 1:nSin){
+        cust_layout[(nY+nSout+i),2]<-mean(cust_layout[cust_layout[,1]==0,2]*(membership.X==i))
+      }
+    }
+    if (latents %in% c("out","both")){
+      for (i in 1:nSout){
+        cust_layout[(nY+i),2]<-mean(cust_layout[cust_layout[,1]==3,2]*(membership.Y==i))
+      }
+    }
 
     G<-igraph::graph_from_data_frame(edges,
                              directed=TRUE,
