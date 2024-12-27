@@ -55,7 +55,7 @@ plot.nda <- function(x,cuts=0.3,interactive=TRUE,edgescale=1.0,labeldist=-1.5,
       to=edges$V2,
       arrows=ifelse(igraph::is.directed(G),c("middle"),""),
       smooth=c(FALSE),
-      label=ifelse(show_weights==TRUE,paste(round(igraph::E(G)$weight,2)),""),
+      label=unlist(ifelse(show_weights==TRUE,list(paste(round(igraph::E(G)$weight,2))),list(""))),
       width=(igraph::E(G)$weight)*edgescale,
       color="#5080b1"
     )
