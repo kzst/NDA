@@ -273,7 +273,7 @@ plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
       #  theme(legend.position = "bottom",
       #        panel.background = element_rect(fill="white"),
       #        plot.margin = margin(3, 3, 3, 3, "cm"))
-      return(G)
+      return(invisible(G))
     }
 
   }else{
