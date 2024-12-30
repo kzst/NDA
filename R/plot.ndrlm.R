@@ -177,9 +177,9 @@ plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
     }
 
 
-    space=150
+    space=100
     cust_layout<-matrix(0,ncol=2,nrow=nY+nSin+nSout+nX)
-    cust_layout[1:nY,1]<-3
+    cust_layout[1:nY,1]<-30
     if (latents %in% c("out","both")){
       cust_layout[sort(membership.Y,index.return=TRUE)$ix,2]<-((1:nY)-mean(1:nY))*space
     }else{
@@ -187,12 +187,12 @@ plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
     }
 
     if (latents %in% c("out","both")){
-      cust_layout[(nY+1):(nY+nSout),1]<-2
+      cust_layout[(nY+1):(nY+nSout),1]<-20
       cust_layout[(nY+1):(nY+nSout),2]<-((1:nSout)-mean(1:nSout))*space
     }
 
     if (latents %in% c("in","both")){
-      cust_layout[(nY+nSout+1):(nY+nSin+nSout),1]<-1
+      cust_layout[(nY+nSout+1):(nY+nSin+nSout),1]<-10
       cust_layout[(nY+nSout+1):(nY+nSin+nSout),2]<-((1:nSin)-mean(1:nSin))*space
     }
 
@@ -209,7 +209,7 @@ plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
     }
     if (latents %in% c("out","both")){
       for (i in 1:nSout){
-        cust_layout[(nY+i),2]<-mean(cust_layout[cust_layout[,1]==3,2]*(membership.Y==i))
+        cust_layout[(nY+i),2]<-mean(cust_layout[cust_layout[,1]==30,2]*(membership.Y==i))
       }
     }
 
@@ -252,8 +252,8 @@ plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
     }else{
       igraph::V(G)$color<-grDevices::hsv((node_color+1)/max(node_color+1),
                                   alpha=0.4)
-      igraph::plot.igraph(G,layout=cust_layout,edge.width=abs(igraph::E(G)$weight)*5,
-           edge.label=round(igraph::E(G)$weight,2),vertex.size=50)
+      igraph::plot.igraph(G,layout=cust_layout,edge.width=abs(igraph::E(G)$weight)*2,
+           edge.label=round(igraph::E(G)$weight,2),vertex.size=30)
 
       #ggraph(G, layout = cust_layout, circular = FALSE) +
       #  geom_edge_diagonal(arrow = arrow(angle = 8, length = unit(0.10, "inches"),
