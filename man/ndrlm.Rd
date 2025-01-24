@@ -21,7 +21,7 @@ ndrlm(Y,X,latents="in",dircon=FALSE,optimize=TRUE,
                 lower.bounds.latenty = c(0,0,0,0),
                 upper.bounds.latenty = c(0.6,0.6,0.6,0.3),
                 popsize = 20, generations = 30, cprob = 0.7, cdist = 5,
-                mprob = 0.1, mdist=10, seed=NULL)
+                mprob = 0.2, mdist=10, seed=NULL)
 
 }
 \arguments{
@@ -58,7 +58,7 @@ ndrlm(Y,X,latents="in",dircon=FALSE,optimize=TRUE,
   \item{generations}{number of generations to breed of NSGA-II for fitting betas (default=30)}
   \item{cprob}{crossover probability of NSGA-II for fitting betas (default=0.7)}
   \item{cdist}{crossover distribution index of NSGA-II for fitting betas (default=5)}
-  \item{mprob}{mutation probability of NSGA-II for fitting betas (default=0.1)}
+  \item{mprob}{mutation probability of NSGA-II for fitting betas (default=0.2)}
   \item{mdist}{mutation distribution index of NSGA-II for fitting betas (default=10)}
   \item{seed}{default seed value (default=NULL, no seed)}
 }
