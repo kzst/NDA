@@ -64,6 +64,11 @@ ndr<-function(r,covar=FALSE,cor_method=1,cor_type=1,min_R=0,min_comm=2,Gamma=1,
     weight=rep(1,ncol(r))
   }
   r<-t(t(r)*weight)
+  weight[is.na(weight)]<-0
+  if (is.na(min_R)) {min_R<-0}
+  if (is.na(min_evalue)) {min_evalue<-0}
+  if (is.na(min_communality)) {min_communality<-0}
+  if (is.na(com_communalities)) {com_communalities<-0}
   DATA<-r
   X<-r
 

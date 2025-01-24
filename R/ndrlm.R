@@ -81,6 +81,7 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,
     "none"=NULL
   )
   cost<-function(hyperparams){ # Cost function
+    hyperparams[is.na(hyperparams)]<-0
     if ("in" %in% latents){
       weight.X<-hyperparams[1:ncol(X)]
       params.X<-hyperparams[-c(1:ncol(X))]
@@ -262,7 +263,7 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,
                        mprob = mprob, mdist=mdist,vectorized = FALSE)
     hyperparams<-NSGA$par[1,]
   }
-
+  hyperparams[is.na(hyperparams)]<-0
   if ("in" %in% latents){
     weight.X<-hyperparams[1:ncol(X)]
     params.X<-hyperparams[-c(1:ncol(X))]
