@@ -6,7 +6,9 @@
 The main function of Generalized Network-based Dimensionality Reduction and Regression (GNDR) for supervised learning.
 }
 \usage{
-ndrlm(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
+ndrlm(Y,X,latents="in",dircon=FALSE,optimize=TRUE,
+                target="adj.r.square",
+                cor_method=1,
                 cor_type=1,min_comm=2,Gamma=1,
                 null_model_type=4,mod_mode=1,use_rotation=FALSE,
                 rotation="oblimin",pareto=FALSE,fit_weights=NULL,
@@ -19,7 +21,7 @@ ndrlm(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
                 lower.bounds.latenty = c(0,0,0,0),
                 upper.bounds.latenty = c(0.6,0.6,0.6,0.3),
                 popsize = 20, generations = 30, cprob = 0.7, cdist = 5,
-                mprob = 0.2, mdist=10, seed=NULL)
+                mprob = 0.1, mdist=10, seed=NULL)
 
 }
 \arguments{
@@ -28,6 +30,7 @@ ndrlm(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
   \item{latents}{The employs of latent variables: "in" employs latent-independent variables (default); "out" employs latent-dependent variables; "both" employs both latent-dependent and latent independent variables; "none" do not employs latent variable (= multiple regression)}
   \item{dircon}{Wether enable or disable direct connection between input and output variables (default=FALSE)}
   \item{optimize}{Optimization of fittings (default=TRUE)}
+  \item{target}{Target performance measures. The possible target measure are "adj.r.square" = adjusted R  square (default), "r.sqauare" = R square, "MAE" = mean absolute error, "MAPE" = mean absolute percentage error, "MASE" = mean absolute scaled error ,"MSE"= mean square error,"RMSE" = root mean square error}
   \item{cor_method}{Correlation method (optional).
 '1' Pearson's correlation (default),
 '2' Spearman's correlation, '3' Kendall's correlation,
@@ -55,7 +58,7 @@ ndrlm(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
   \item{generations}{number of generations to breed of NSGA-II for fitting betas (default=30)}
   \item{cprob}{crossover probability of NSGA-II for fitting betas (default=0.7)}
   \item{cdist}{crossover distribution index of NSGA-II for fitting betas (default=5)}
-  \item{mprob}{mutation probability of NSGA-II for fitting betas (default=0.2)}
+  \item{mprob}{mutation probability of NSGA-II for fitting betas (default=0.1)}
   \item{mdist}{mutation distribution index of NSGA-II for fitting betas (default=10)}
   \item{seed}{default seed value (default=NULL, no seed)}
 }
@@ -65,6 +68,7 @@ ndrlm(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
 \value{
 \item{Call}{Callback function}
 \item{fval}{Objective function for fitting}
+\item{target}{Target performance measures. The possible target measure are "adj.r.square" = adjusted R  square (default), "r.sqauare" = R square, "MAE" = mean absolute error, "MAPE" = mean absolute percentage error, "MASE" = mean absolute scaled error ,"MSE"= mean square error,"RMSE" = root mean square error}
 \item{hyperparams}{optimized hyperparameters}
 \item{pareto}{in the case of multiple objectives TRUE provides pareto-optimal solution, while FALSE (default) provides weighted mean of objective functions (see out_weights)}
 \item{Y}{A numeric data frame of output variables}

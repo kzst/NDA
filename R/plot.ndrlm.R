@@ -177,7 +177,7 @@ plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
     }
 
 
-    space=100
+    space<-100
     cust_layout<-matrix(0,ncol=2,nrow=nY+nSin+nSout+nX)
     cust_layout[1:nY,1]<-30
     if (latents %in% c("out","both")){
@@ -254,25 +254,6 @@ plot.ndrlm <- function(x,sig=0.05,interactive=FALSE,...){
                                   alpha=0.4)
       igraph::plot.igraph(G,layout=cust_layout,edge.width=abs(igraph::E(G)$weight)*2,
            edge.label=round(igraph::E(G)$weight,2),vertex.size=30)
-
-      #ggraph(G, layout = cust_layout, circular = FALSE) +
-      #  geom_edge_diagonal(arrow = arrow(angle = 8, length = unit(0.10, "inches"),
-      #                                   ends = "last", type = "closed"),width=0.1) +
-      #  geom_node_point(size=10,aes(color=V(G)$color,
-      #                      shape=factor(V(G)$shape,
-      #                                   labels=c("circle","rectangle")))) +
-      #  scale_shape_manual (labels = c("latents","indicators"),
-      #                      values = c(16,15)) +
-      #  scale_color_distiller(palette="Set3") +
-      #  guides(shape = guide_legend(""),
-      #         color=guide_none(),
-      #         size = guide_none()) +
-      #  geom_node_text (aes (label = label),
-      #  hjust = -0.1, vjust = 0.5,size=4,
-      #                  colour = "#3333AA") +
-      #  theme(legend.position = "bottom",
-      #        panel.background = element_rect(fill="white"),
-      #        plot.margin = margin(3, 3, 3, 3, "cm"))
       return(invisible(G))
     }
 

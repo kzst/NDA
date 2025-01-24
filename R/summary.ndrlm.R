@@ -21,6 +21,7 @@ summary.ndrlm <- function(object,  digits =  getOption("digits"), ...) {
   }
   if (methods::is(object,"ndrlm")){
     Call<-object$Call
+    target<-object$target
     fval<-object$fval
     pareto<-object$pareto
     X<-object$X
@@ -62,6 +63,7 @@ summary.ndrlm <- function(object,  digits =  getOption("digits"), ...) {
     fn<-object$fn
     results<-list(Call=Call,
                     fval=fval,
+                    target=target,
                     pareto=pareto,
                     X = X,
                     Y = Y,

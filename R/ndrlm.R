@@ -12,7 +12,9 @@
 #-----------------------------------------------------------------------------#
 ### GENERALIZED NETWORK-BASED DIMENSIONALITY REDUCTION AND REGRESSION (GNDR) ##
 #' @export
-ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
+ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,
+                target="adj.r.square",
+                cor_method=1,
                 cor_type=1,min_comm=2,Gamma=1,
                 null_model_type=4,mod_mode=1,use_rotation=FALSE,
                 rotation="oblimin",pareto=FALSE,fit_weights=NULL,
@@ -25,11 +27,17 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
                 lower.bounds.latenty = c(0,0,0,0),
                 upper.bounds.latenty = c(0.6,0.6,0.6,0.3),
                 popsize = 20, generations = 30, cprob = 0.7, cdist = 5,
-                mprob = 0.2, mdist=10, seed=NULL){
+                mprob = 0.1, mdist=10, seed=NULL){
   cl<-match.call()
   if (!requireNamespace("mco", quietly = TRUE)) {
     stop(
       "Package \"mco\" must be installed to use this function.",
+      call. = FALSE
+    )
+  }
+  if (!(target %in% c("adj.r.square","r.sqauare","MAE","MAPE","MASE","MSE","RMSE"))){
+    stop(
+      "Target must be either adj.r.square, r.sqauare, MAE, MAPE, MASE, MSE, or RMSE",
       call. = FALSE
     )
   }
@@ -66,8 +74,8 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
   )
   upper.bounds=switch(
     latents,
-    "in"=c(upper.bounds.x,lower.bounds.latentx),
-    "out"=c(upper.bounds.y,lower.bounds.latenty),
+    "in"=c(upper.bounds.x,upper.bounds.latentx),
+    "out"=c(upper.bounds.y,upper.bounds.latenty),
     "both"=c(upper.bounds.x,upper.bounds.latentx,
              upper.bounds.y,upper.bounds.latenty),
     "none"=NULL
@@ -144,26 +152,34 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
       dropped_X<-NULL
       dropped_Y<-NULL
       if (latents %in% c("in")){
-        if ((dircon==TRUE)&&(sum(NDA_in$membership==0)>0)){
-          extra_vars.X<-TRUE
-          dropped_X<-X[,NDA_in$membership==0]
-        }
+        if (!inherits(NDA_in,"try-error")){
+          if ((dircon==TRUE)&&(sum(NDA_in$membership==0)>0)){
+            extra_vars.X<-TRUE
+            dropped_X<-X[,NDA_in$membership==0]
+          }
+        }else{return(res)}
       }else{
         if (latents %in% c("out")){
-          if ((dircon==TRUE)&&(sum(NDA_out$membership==0)>0)){
-            extra_vars.Y<-TRUE
-            dropped_Y<-Y[,NDA_out$membership==0]
-          }
-        }else{
-          if (latents %in% c("both")){
-            if ((dircon==TRUE)&&(sum(NDA_in$membership==0)>0)){
-              extra_vars.X<-TRUE
-              dropped_X<-X[,NDA_in$membership==0]
-            }
+          if (!inherits(NDA_out,"try-error")){
             if ((dircon==TRUE)&&(sum(NDA_out$membership==0)>0)){
               extra_vars.Y<-TRUE
               dropped_Y<-Y[,NDA_out$membership==0]
             }
+          }else{return(res)}
+        }else{
+          if (latents %in% c("both")){
+            if (!inherits(NDA_in,"try-error")){
+              if ((dircon==TRUE)&&(sum(NDA_in$membership==0)>0)){
+                extra_vars.X<-TRUE
+                dropped_X<-X[,NDA_in$membership==0]
+              }
+            }else{return(res)}
+            if (!inherits(NDA_out,"try-error")){
+              if ((dircon==TRUE)&&(sum(NDA_out$membership==0)>0)){
+                extra_vars.Y<-TRUE
+                dropped_Y<-Y[,NDA_out$membership==0]
+              }
+            }else{return(res)}
           }
         }
       }
@@ -192,9 +208,6 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
         }
       }
 
-
-
-
       for (i in 1:ncol(dep))
       {
         data<-cbind(dep[,i],indep)
@@ -204,8 +217,15 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
         fit<-stats::lm(str2lang(paste(colnames(data)[1],"~",
                                       gsub(", ","+",
                                            toString(colnames(data)[-1])))),data)
-
-        res[i]<-stats::summary.lm(fit)$adj.r.squared
+        res[i]<-switch(target,
+                       "adj.r.square" = stats::summary.lm(fit)$adj.r.squared,
+                       "r.sqauare" = stats::summary.lm(fit)$r.squared,
+                       "MAE" = Metrics::mae(data[,1],stats::fitted(fit)),
+                       "MAPE" = Metrics::mape(data[,1],stats::fitted(fit)),
+                       "MASE" = Metrics::mase(data[,1],stats::fitted(fit)),
+                       "MSE" = Metrics::mse(data[,1],stats::fitted(fit)),
+                       "RMSE" = Metrics::rmse(data[,1],stats::fitted(fit))
+        )
       }
       if (pareto==TRUE){
         return(res)
@@ -222,8 +242,12 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
   {
     set.seed(seed)
   }
+  if (target %in% c("adj.r.square","r.square")){
+    costmin <- function(hyperparams) -cost(hyperparams)
+  }else{
+    costmin <- function(hyperparams) cost(hyperparams)
+  }
 
-  costmin <- function(hyperparams) -cost(hyperparams)
   if (pareto==TRUE){
     ODIM<-ncol(Y)
   }else{
@@ -356,6 +380,7 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,cor_method=1,
 
   P<-list()
   P$Call<-cl
+  P$target<-target
   P$fval<-cost(hyperparams)
   P$hyperparams<-hyperparams
   P$pareto<-pareto

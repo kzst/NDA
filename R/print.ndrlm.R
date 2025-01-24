@@ -21,6 +21,7 @@ print.ndrlm <- function(x, digits = getOption("digits"), ...) {
   }
   if (methods::is(x,"ndrlm")){
     Call<-x$Call
+    target<-x$target
     fval<-x$fval
     pareto<-x$pareto
     X<-x$X
@@ -63,6 +64,7 @@ print.ndrlm <- function(x, digits = getOption("digits"), ...) {
     cat("\nBrief summary of NDRLM:\n")
     cat("\nFunction call: ")
     print(Call)
+
     cat("\nNumber of independent variables: ",ncol(X))
     cat("\nNumber of dependent variables: ",ncol(Y))
     if (latents %in% c("in","both")){
@@ -92,6 +94,7 @@ print.ndrlm <- function(x, digits = getOption("digits"), ...) {
     cat("\n\nSummary of fitting\n")
     if (optimized==TRUE){
       cat("\nOptimized fittings\n")
+      cat("\nTarget performance measure: ",target)
     }else{
       cat("\nNon-optimized fittings\n")
     }
