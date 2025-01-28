@@ -273,7 +273,7 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,
                        mprob = mprob, mdist=mdist,vectorized = FALSE)
     HYPERPARAMS<-NSGA$par
     HYPERPARAMS[is.na(HYPERPARAMS)]<-0
-    I<-1
+    I<-1 ## Try to find a feasible solution
     while (I<=nrow(HYPERPARAMS)&&(ERROR==TRUE)){
       hyperparams<-HYPERPARAMS[I,]
       hyperparams[is.na(hyperparams)]<-0
@@ -407,7 +407,6 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,
       )
       hyperparams<-tmp_hyper
     }
-
   }
 
   if (ERROR==TRUE){ # If not optimized, or cannot be optimized.
@@ -528,10 +527,7 @@ ndrlm<-function(Y,X,latents="in",dircon=FALSE,optimize=TRUE,
       fits[[i]]<-fit
     }
 
-
   }
-
-
 
   P<-list()
   P$Call<-cl
